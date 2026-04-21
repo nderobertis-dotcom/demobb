@@ -2166,13 +2166,20 @@ function aggiornaCalendario(){
       for(let g=1;g<=giorniMese;g++){
         const dateStr=toDateStrYMD(a,m,g);
         const pren=allPrenotazioni.find(p=>p.cameraId===cam.id&&p.checkin<=dateStr&&p.checkout>dateStr);
-        const isFirst=pren&&pren.checkin===dateStr;
+        // Disegna la barra: sia nel giorno di checkin, sia nel giorno 1 del mese se la prenotazione continua dal mese precedente
+        const isFirst=pren&&(pren.checkin===dateStr||(g===1&&pren.checkin<dateStr));
         if(pren&&isFirst){
-          const dur=calcolaNotti(pren.checkin,pren.checkout);
-          const durInMese=Math.min(dur,giorniMese-g+1);
+          // Calcola i giorni rimanenti nel mese a partire da questo giorno (g)
+          const giorniRimanenti=giorniMese-g+1;
+          // Calcola i giorni totali dalla cella corrente al checkout
+          const msPerDay=1000*60*60*24;
+          const daOggi=Math.ceil((new Date(pren.checkout)-new Date(dateStr))/msPerDay);
+          const durInMese=Math.min(daOggi,giorniRimanenti);
+          // Se la prenotazione continua dal mese precedente, non mostrare il nome (solo la barra)
+          const label=pren.checkin===dateStr?`${pren.cognome||''} ${pren.nome||''}`:`↩ ${pren.cognome||''} ${pren.nome||''}`;
           grid+=`<div class="cal-cell" style="overflow:visible;z-index:2">
-            <div class="cal-booking" title="${pren.cognome||''} ${pren.nome||''}" style="width:calc(${durInMese*100}% + ${(durInMese-1)*1}px)">
-              ${pren.cognome||''} ${pren.nome||''}
+            <div class="cal-booking" title="${pren.cognome||''} ${pren.nome||''}" style="width:calc(${durInMese*100}% + ${(durInMese-1)*1}px);${pren.checkin!==dateStr?'opacity:.85;':''}">
+              ${label}
             </div></div>`;
         } else if(pren){
           grid+=`<div class="cal-cell cal-occ"></div>`;
