@@ -1,0 +1,2934 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestionale Struttura Ricettiva</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#EEF6FB;--surface:#FFF;--surface2:#E3F0F8;--border:#C8DFF0;
+    --text:#0D2436;--text-muted:#6A8DA8;--accent:#1A6FA8;--accent-light:#DCF0FF;
+    --accent2:#2AA1A0;--accent2-light:#E0F5F5;--danger:#C0392B;--danger-light:#FDECEA;
+    --shadow:0 2px 12px rgba(13,36,54,.08);--shadow-lg:0 8px 32px rgba(13,36,54,.14);
+    --radius:10px;--radius-sm:6px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+  /* AUTH */
+  #auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,#0D2F5A 0%,#1A6FA8 60%,#2AA1A0 100%)}
+  .auth-box{background:var(--surface);border-radius:16px;padding:48px 40px;width:100%;max-width:400px;box-shadow:var(--shadow-lg)}
+  .auth-logo{text-align:center;margin-bottom:32px}
+  .auth-logo img{width:90px;height:auto;margin-bottom:10px}
+  .auth-logo h1{font-family:'DM Serif Display',serif;font-size:24px;color:var(--accent)}
+  .auth-logo p{color:var(--text-muted);font-size:13px;margin-top:2px}
+  .auth-box input{width:100%;padding:12px 16px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+    font-family:inherit;font-size:15px;background:var(--bg);color:var(--text);margin-bottom:12px;transition:border-color .2s}
+  .auth-box input:focus{outline:none;border-color:var(--accent)}
+  .auth-error{color:var(--danger);font-size:13px;margin-bottom:12px;display:none}
+
+  /* LAYOUT */
+  #app{display:none;flex-direction:column;min-height:100vh}
+  .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:60px;
+    display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
+  .topbar-brand{font-family:'DM Serif Display',serif;font-size:20px;color:var(--accent);display:flex;align-items:center;gap:8px}
+  .topbar-logo{height:30px;width:auto;border-radius:4px}
+  .topbar-right{display:flex;align-items:center;gap:16px}
+  .user-badge{background:var(--accent-light);color:var(--accent);padding:4px 12px;border-radius:20px;font-size:13px;font-weight:500}
+  .main-layout{display:flex;flex:1}
+  .sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);padding:20px 12px;
+    display:flex;flex-direction:column;gap:4px;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:var(--radius-sm);
+    cursor:pointer;font-size:14px;font-weight:500;color:var(--text-muted);transition:all .15s;
+    border:none;background:none;width:100%;text-align:left}
+  .nav-item:hover{background:var(--surface2);color:var(--text)}
+  .nav-item.active{background:var(--accent-light);color:var(--accent)}
+  .nav-icon{font-size:16px}
+  .content{flex:1;padding:28px;overflow-y:auto}
+
+  /* PAGES */
+  .page{display:none;animation:fadeIn .2s}
+  .page.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .page-title{font-family:'DM Serif Display',serif;font-size:26px;color:var(--text);margin-bottom:24px}
+
+  /* STATS */
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:28px}
+  .stat-card{background:var(--surface);border-radius:var(--radius);padding:20px 22px;border:1px solid var(--border);box-shadow:var(--shadow)}
+  .stat-label{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px}
+  .stat-value{font-size:32px;font-weight:600;color:var(--text);font-family:'DM Serif Display',serif}
+  .stat-sub{font-size:12px;color:var(--text-muted);margin-top:4px}
+
+  /* TABLE */
+  .table-wrap{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;box-shadow:var(--shadow)}
+  table{width:100%;border-collapse:collapse}
+  th{background:var(--surface2);padding:12px 16px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);font-weight:600}
+  td{padding:14px 16px;border-top:1px solid var(--border);font-size:14px;vertical-align:middle}
+  tr:hover td{background:var(--surface2)}
+
+  /* BADGES */
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+  .badge-in{background:var(--accent-light);color:var(--accent)}
+  .badge-out{background:var(--surface2);color:var(--text-muted)}
+  .badge-stay{background:var(--accent2-light);color:var(--accent2)}
+  .badge-free{background:#EEF7F0;color:#2a7a3b}
+  .badge-occ{background:#FEF3E0;color:#b86a00}
+
+  /* BUTTONS */
+  .btn{padding:9px 18px;border-radius:var(--radius-sm);font-family:inherit;font-size:14px;font-weight:500;
+    cursor:pointer;border:none;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover{background:#155d8e}
+  .btn-outline{background:transparent;color:var(--text);border:1.5px solid var(--border)}
+  .btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+  .btn-danger{background:var(--danger-light);color:var(--danger)}
+  .btn-danger:hover{background:var(--danger);color:#fff}
+  .btn-sm{padding:6px 12px;font-size:13px}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--surface);border-radius:14px;padding:32px;width:100%;max-width:540px;box-shadow:var(--shadow-lg);max-height:90vh;overflow-y:auto}
+  .modal-wide{max-width:720px}
+  .modal-title{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:24px}
+  .form-group{margin-bottom:14px}
+  .form-label{display:block;font-size:13px;font-weight:500;color:var(--text-muted);margin-bottom:5px}
+  .form-control{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+    font-family:inherit;font-size:14px;background:var(--bg);color:var(--text);transition:border-color .2s}
+  .form-control:focus{outline:none;border-color:var(--accent)}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px}
+  .section-divider{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);
+    margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+
+  /* CALENDARIO VERTICALE */
+  .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+  .cal-title{font-family:'DM Serif Display',serif;font-size:20px}
+  .cal-months-wrap{display:flex;flex-direction:column;gap:28px}
+  .cal-month-block{}
+  .cal-month-label{font-family:'DM Serif Display',serif;font-size:17px;color:var(--accent);margin-bottom:10px;
+    display:flex;align-items:center;gap:8px}
+  .cal-month-label .badge-stay{font-size:10px;padding:2px 8px}
+  .cal-grid-wrap{overflow-x:auto}
+  .cal-grid{display:grid;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--surface);box-shadow:var(--shadow);min-width:600px}
+  .cal-head-cell{background:var(--surface2);font-weight:600;font-size:11px;text-transform:uppercase;
+    letter-spacing:.05em;color:var(--text-muted);text-align:center;padding:8px 4px;
+    border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+  .cal-room-cell{background:var(--surface2);font-weight:500;font-size:13px;color:var(--text);
+    padding:8px 10px;display:flex;align-items:center;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+  .cal-cell{padding:4px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);
+    min-height:36px;position:relative}
+  .cal-booking{position:absolute;inset:3px;border-radius:4px;background:var(--accent);color:#fff;
+    font-size:10px;font-weight:500;display:flex;align-items:center;padding:0 5px;overflow:hidden;
+    white-space:nowrap;text-overflow:ellipsis;cursor:pointer;z-index:3}
+  .cal-occ{background:rgba(26,111,168,.12)}
+
+  /* CAMERE */
+  .camere-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+  .camera-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);
+    padding:20px;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s}
+  .camera-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+  .camera-numero{font-family:'DM Serif Display',serif;font-size:28px;color:var(--accent)}
+  .camera-nome{font-size:14px;font-weight:500;margin:4px 0 8px}
+  .camera-actions{display:flex;gap:8px;margin-top:14px}
+
+  /* TOOLBAR */
+  .toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+
+  /* SCHEDA CLIENTE STAMPA */
+  .cliente-card-print{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px}
+  .cliente-card-print h3{font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:12px;color:var(--accent)}
+  .cliente-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;font-size:14px;margin-bottom:16px}
+  .ci-label{color:var(--text-muted);font-size:12px}
+  .ci-val{font-weight:500}
+
+  /* STAMPA */
+  .print-section{background:var(--surface);border-radius:var(--radius);padding:24px;margin-bottom:20px;border:1px solid var(--border)}
+  .print-filters{display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap}
+
+  /* TOAST */
+  #toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;padding:12px 20px;
+    border-radius:8px;font-size:14px;z-index:9999;transform:translateY(80px);opacity:0;transition:all .3s;box-shadow:var(--shadow-lg)}
+  #toast.show{transform:translateY(0);opacity:1}
+  #toast.success{background:var(--accent)}
+  #toast.error{background:var(--danger)}
+
+  .spinner{display:inline-block;width:20px;height:20px;border:2.5px solid #fff3;border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .empty-state{text-align:center;padding:60px 20px;color:var(--text-muted)}
+  .empty-icon{font-size:40px;margin-bottom:12px}
+
+  #pending-banner{background:#FEF3CD;border-bottom:1px solid #F5D87A;padding:12px 24px;
+    text-align:center;font-size:14px;color:#7a5c00;display:none}
+
+  @media(max-width:768px){
+    .sidebar{width:56px;padding:16px 8px}
+    .nav-item span{display:none}
+    .content{padding:16px}
+    .form-row,.form-row3{grid-template-columns:1fr}
+    .stat-grid{grid-template-columns:1fr 1fr}
+  }
+
+  /* OSPITI */
+  .ospite-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;position:relative}
+  .ospite-card-title{font-size:12px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+  .ospite-required{border-left:3px solid var(--accent)}
+  .ospite-optional{border-left:3px solid var(--border)}
+  @media print{
+    .topbar,.sidebar,.no-print,.modal-overlay,#pending-banner,#toast{display:none!important}
+    .main-layout{display:block!important}
+    .content{padding:0!important}
+    .page{display:none!important}
+    #page-stampa{display:block!important}
+    body{background:#fff!important}
+    .table-wrap{box-shadow:none!important}
+    th{background:#eee!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .badge{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+
+  /* GUIDA */
+  .gnav{width:100%;text-align:left;border:none;background:none;padding:9px 12px;border-radius:6px;
+    cursor:pointer;font-size:13px;color:var(--text-muted);display:flex;align-items:center;gap:8px;
+    transition:all .15s;font-family:'DM Sans',sans-serif;margin-bottom:2px}
+  .gnav:hover{background:var(--surface2);color:var(--text)}
+  .gnav.active{background:var(--accent-light);color:var(--accent);font-weight:600}
+  .gs-header{display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid var(--border)}
+  .gs-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+  .gs-title{font-family:'DM Serif Display',serif;font-size:22px;color:var(--text)}
+  .gs-sub{font-size:13px;color:var(--text-muted);margin-top:2px}
+  .gs-p{font-size:14px;line-height:1.7;color:var(--text);margin-bottom:16px}
+  .gs-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:12px}
+  .gs-card-title{background:var(--accent);color:#fff;padding:10px 16px;font-size:13px;font-weight:600}
+  .gs-step{display:flex;align-items:flex-start;gap:12px;padding:10px 16px;font-size:13px;color:var(--text);line-height:1.5;border-top:1px solid var(--border)}
+  .gs-step:first-of-type{border-top:none}
+  .gs-num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px}
+  .gs-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:4px}
+  .gs-table{width:100%;border-collapse:collapse;font-size:13px}
+  .gs-table th{background:var(--surface2);padding:9px 14px;text-align:left;color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  .gs-table td{padding:9px 14px;border-top:1px solid var(--border);color:var(--text)}
+  .gs-table tr:nth-child(even) td{background:var(--bg)}
+  .ok{color:#2a7a3b;text-align:center;font-size:16px}
+  .no{color:#C0392B;text-align:center;font-size:16px}
+  .gs-badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600}
+  .gs-info{background:var(--accent-light);border-left:4px solid var(--accent);border-radius:0 8px 8px 0;padding:14px 16px;font-size:13px;color:var(--text);line-height:1.6}
+  .gs-warning{background:#FEF3CD;border-left:4px solid #F5D87A;border-radius:0 8px 8px 0;padding:14px 16px;font-size:13px;color:#7a5c00;line-height:1.6;margin-top:12px}
+  .gs-stat-card{background:var(--surface);border:1px solid var(--border);border-left:4px solid;border-radius:8px;padding:14px}
+  .gs-stat-label{font-weight:600;font-size:13px;color:var(--text);margin-bottom:4px}
+  .gs-stat-desc{font-size:12px;color:var(--text-muted)}
+  .gs-faq-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden}
+  .gs-faq-q{padding:12px 16px;font-weight:600;font-size:13px;color:var(--accent);background:var(--accent-light);border-bottom:1px solid var(--border)}
+  .gs-faq-a{padding:12px 16px;font-size:13px;color:var(--text);line-height:1.7}
+  .gs-field-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo"><div style="font-size:56px;margin-bottom:10px">🏨</div>
+      
+      <h1 style="font-family:'DM Serif Display',serif;font-size:24px">Gestionale Struttura Ricettiva</h1>
+      <p>La tua struttura ricettiva · Demo</p>
+    </div>
+    <div class="auth-error" id="auth-error"></div>
+    <input type="email" id="auth-email" placeholder="Email" autocomplete="email">
+    <input type="password" id="auth-password" placeholder="Password" autocomplete="current-password">
+    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">
+      <span id="login-btn-text">Accedi</span>
+    </button>
+  </div>
+</div>
+
+<div id="pending-banner">⏳ Il tuo account è in attesa di approvazione dall'amministratore.</div>
+<div id="demo-banner" style="background:linear-gradient(90deg,#1A6FA8,#2AA1A0);color:#fff;padding:10px 24px;text-align:center;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:12px">
+  <span>🚀 <strong>Versione Demo</strong> — Gestionale Struttura Ricettiva · Configura Firebase per attivare il salvataggio dati</span>
+  <a href="mailto:info@esempio.it" style="color:#fff;background:rgba(255,255,255,0.2);padding:4px 14px;border-radius:20px;text-decoration:none;font-size:12px;border:1px solid rgba(255,255,255,0.4)">Contattaci</a>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-brand">🏨 
+      
+      🏨 Gestionale
+    </div>
+    <div class="topbar-right">
+      <span class="user-badge" id="user-role-badge">Admin</span>
+      <span style="font-size:13px;color:var(--text-muted)" id="user-email-label"></span>
+      <button class="btn btn-outline btn-sm" onclick="doLogout()">Esci</button>
+    </div>
+  </div>
+  <div class="main-layout">
+    <div class="sidebar">
+      <button class="nav-item active" onclick="navTo('dashboard',this)"><span class="nav-icon">📊</span><span>Dashboard</span></button>
+      <button class="nav-item" onclick="navTo('calendario',this)"><span class="nav-icon">📅</span><span>Calendario</span></button>
+      <button class="nav-item" onclick="navTo('prenotazioni',this)"><span class="nav-icon">📋</span><span>Prenotazioni</span></button>
+      <button class="nav-item no-visual" onclick="navTo('clienti',this)"><span class="nav-icon">👥</span><span>Clienti</span></button>
+      <button class="nav-item no-visual" onclick="navTo('stampa',this)"><span class="nav-icon">🖨️</span><span>Stampa</span></button>
+      <button class="nav-item no-visual" id="nav-questura" onclick="navTo('questura',this)" style="position:relative">
+        <span class="nav-icon">🚔</span><span>Questura</span>
+        <span id="questura-badge" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);
+          font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;line-height:1.4"></span>
+      </button>
+      <button class="nav-item no-visual" onclick="navTo('contabilita',this)"><span class="nav-icon">💰</span><span>Contabilità</span></button>
+      <button class="nav-item proprietario-only admin-show" onclick="navTo('camere',this)"><span class="nav-icon">🛏️</span><span>Camere</span></button>
+      <button class="nav-item admin-only" onclick="navTo('impostazioni',this)"><span class="nav-icon">⚙️</span><span>Impostazioni</span></button>
+      <!-- Guida in fondo, separata -->
+      <div style="flex:1"></div>
+      <div style="border-top:1px solid var(--border);margin:8px 0"></div>
+      <button class="nav-item" onclick="navTo('guida',this)"><span class="nav-icon">📖</span><span>Guida</span></button>
+    </div>
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-title">Dashboard</div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-label">Prenotazioni oggi</div><div class="stat-value" id="stat-oggi">—</div><div class="stat-sub">check-in / check-out</div></div>
+          <div class="stat-card"><div class="stat-label">Camere occupate</div><div class="stat-value" id="stat-occ">—</div><div class="stat-sub" id="stat-occ-sub">su — disponibili</div></div>
+          <div class="stat-card"><div class="stat-label">Prenotazioni totali</div><div class="stat-value" id="stat-tot">—</div><div class="stat-sub">nel sistema</div></div>
+          <div class="stat-card"><div class="stat-label">Incasso (mese)</div><div class="stat-value" id="stat-mese">—</div><div class="stat-sub">prenotazioni del mese</div></div>
+          <div class="stat-card" id="dash-saldo-card" style="border-left:4px solid #2a7a3b"><div class="stat-label">Saldo contabilità (mese)</div><div class="stat-value" id="dash-saldo-cont" style="font-size:22px">—</div><div class="stat-sub" id="dash-saldo-sub">entrate − uscite</div></div>
+        </div>
+        <div class="page-title" style="font-size:18px;margin-bottom:16px">Prossimi arrivi</div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Ospite</th><th>Camera</th><th>Check-in</th><th>Check-out</th><th>Stato</th></tr></thead>
+          <tbody id="tb-arrivi"><tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted)">Caricamento...</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- CALENDARIO VERTICALE -->
+      <div class="page" id="page-calendario">
+        <div class="cal-header">
+          <div class="cal-title">Calendario prenotazioni</div>
+          <div style="display:flex;gap:8px" class="no-print">
+            <button class="btn btn-outline btn-sm" onclick="calAnniDelta(-1)">◀ Anno prec.</button>
+            <button class="btn btn-outline btn-sm" onclick="calAnniDelta(1)">Anno succ. ▶</button>
+          </div>
+        </div>
+        <div class="cal-months-wrap" id="cal-months-wrap"></div>
+      </div>
+
+      <!-- PRENOTAZIONI -->
+      <div class="page" id="page-prenotazioni">
+        <div class="toolbar">
+          <div class="page-title" style="margin:0">Prenotazioni</div>
+          <button class="btn btn-primary no-print" onclick="openModalPrenotazione()">+ Nuova prenotazione</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Ospite</th><th>Camera</th><th>Check-in</th><th>Check-out</th><th>Notti</th><th>Persone</th><th>Prezzo</th><th>Canale</th><th>Stato</th><th class="no-print"></th></tr></thead>
+            <tbody id="tb-prenotazioni"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CLIENTI -->
+      <div class="page" id="page-clienti">
+        <div class="toolbar">
+          <div class="page-title" style="margin:0">Clienti</div>
+          <button class="btn btn-primary no-print" onclick="openModalCliente()">+ Nuovo cliente</button>
+        </div>
+        <div style="margin-bottom:14px" class="no-print">
+          <input class="form-control" id="clienti-search" placeholder="🔍 Cerca per nome, cognome o telefono..." style="max-width:360px" oninput="renderClienti()">
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Nominativo</th><th>Telefono</th><th>Email</th><th>Canale</th><th>Soggiorni</th><th>Tot. speso</th><th>Ultima visita</th><th class="no-print"></th></tr></thead>
+            <tbody id="tb-clienti"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- STAMPA -->
+      <div class="page" id="page-stampa">
+        <div class="page-title">Stampa riepilogo prenotazioni</div>
+        <div class="print-section no-print">
+          <div class="print-filters">
+            <label class="form-label" style="margin:0">Periodo:</label>
+            <select class="form-control" id="print-tipo" style="width:auto" onchange="aggiornaPrintFiltri()">
+              <option value="giorno">Giorno specifico</option>
+              <option value="settimana">Settimana corrente</option>
+              <option value="mese">Mese corrente</option>
+              <option value="custom">Intervallo personalizzato</option>
+            </select>
+            <input class="form-control" id="print-data" type="date" style="width:auto" oninput="renderStampa()">
+            <span id="print-custom-wrap" style="display:none;gap:8px;align-items:center;display:none">
+              <input class="form-control" id="print-da" type="date" style="width:auto" oninput="renderStampa()">
+              <span>→</span>
+              <input class="form-control" id="print-a" type="date" style="width:auto" oninput="renderStampa()">
+            </span>
+            <button class="btn btn-primary" onclick="stampaPeriodo()">🖨️ Stampa</button>
+          </div>
+        </div>
+        <div id="stampa-content"></div>
+      </div>
+
+            <!-- QUESTURA -->
+      <div class="page" id="page-questura">
+        <div class="toolbar">
+          <div class="page-title" style="margin:0">🚔 Comunicazione Questura</div>
+          <a href="https://alloggiatiweb.poliziadistato.it/PortaleAlloggiati/" target="_blank" class="btn btn-primary btn-sm no-print">Apri Alloggiati Web ↗</a>
+        </div>
+        <div style="background:#FEF3CD;border-left:4px solid #F5D87A;border-radius:0 8px 8px 0;padding:14px 16px;font-size:13px;color:#7a5c00;margin-bottom:20px">
+          ⚖️ <strong>Obbligo di legge</strong> — Art. 109 TULPS: le generalità degli ospiti vanno comunicate alla Questura <strong>entro 24 ore dall'arrivo</strong> (entro 6 ore per soggiorni inferiori alle 24 ore). Conserva le ricevute per 5 anni.
+        </div>
+
+        <!-- IMPOSTAZIONI STRUTTURA -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:20px;box-shadow:var(--shadow)">
+          <div style="font-weight:600;font-size:14px;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:8px">
+            ⚙️ Impostazioni struttura per Alloggiati Web
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+            <div class="form-group"><label class="form-label">Codice struttura (da Questura)</label><input class="form-control" id="q-codice" placeholder="es. APFM000001-0001" oninput="salvaImpostazioniQuestura()"></div>
+            <div class="form-group"><label class="form-label">Username Alloggiati Web</label><input class="form-control" id="q-username" placeholder="Username" oninput="salvaImpostazioniQuestura()"></div>
+            <div class="form-group"><label class="form-label">N° camere disponibili</label><input class="form-control" id="q-camere-disp" type="number" min="1" placeholder="es. 5" oninput="salvaImpostazioniQuestura()"></div>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px">I dati vengono salvati localmente nel browser. La password non va salvata qui per sicurezza.</div>
+        </div>
+
+        <!-- OSPITI DA COMUNICARE -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+          <div>
+            <div style="font-weight:600;font-size:15px;color:var(--text)">Ospiti da comunicare</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:2px">Seleziona gli ospiti e genera il file TXT per Alloggiati Web</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input class="form-control btn-sm" id="q-data-filtro" type="date" style="width:auto" oninput="renderQuestura()">
+            <button class="btn btn-outline btn-sm" onclick="selezionaTuttiQuestura()">Seleziona tutti</button>
+            <button class="btn btn-primary" onclick="generaFileTXT()" id="btn-genera-txt" disabled>⬇️ Genera file TXT</button>
+          </div>
+        </div>
+
+        <div class="table-wrap" style="margin-bottom:20px">
+          <table>
+            <thead><tr>
+              <th style="width:36px"><input type="checkbox" id="q-check-all" onchange="toggleTuttiQuestura(this)"></th>
+              <th>Ospite</th><th>Camera</th><th>Arrivo</th><th>Partenza</th>
+              <th>Documento</th><th>Stato</th><th class="no-print"></th>
+            </tr></thead>
+            <tbody id="tb-questura"></tbody>
+          </table>
+        </div>
+
+        <!-- STORICO INVII -->
+        <div style="font-weight:600;font-size:15px;color:var(--text);margin-bottom:12px">📋 Storico comunicazioni</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Data invio</th><th>Ospiti</th><th>File generato</th><th>Note</th><th class="no-print"></th></tr></thead>
+            <tbody id="tb-storico-questura"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- GUIDA -->
+      <div class="page" id="page-guida">
+        <div style="display:flex;gap:0;height:calc(100vh - 90px);margin:-28px;overflow:hidden">
+
+          <!-- SOMMARIO LATERALE -->
+          <div id="guida-sidebar" style="width:230px;min-width:230px;background:var(--surface);
+            border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column">
+            <div style="padding:20px 16px;background:linear-gradient(135deg,#0D2F5A,#1A6FA8);color:#fff">
+              <div style="font-size:24px;margin-bottom:4px">🐓</div>
+              <div style="font-family:'DM Serif Display',serif;font-size:15px;font-weight:700">🏨 Gestionale</div>
+              <div style="font-size:11px;opacity:.8;margin-top:2px">Guida al Gestionale</div>
+            </div>
+            <div style="padding:10px 8px;flex:1">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);
+                padding:0 8px;margin:8px 0;font-weight:600">Sezioni</div>
+              <button class="gnav active" onclick="guidaSezione('accesso',this)">🔑 <span>Accesso</span></button>
+              <button class="gnav" onclick="guidaSezione('dashboard',this)">📊 <span>Dashboard</span></button>
+              <button class="gnav" onclick="guidaSezione('calendario',this)">📅 <span>Calendario</span></button>
+              <button class="gnav" onclick="guidaSezione('prenotazioni',this)">📋 <span>Prenotazioni</span></button>
+              <button class="gnav" onclick="guidaSezione('checkin',this)">✅ <span>Check-in / Check-out</span></button>
+              <button class="gnav" onclick="guidaSezione('clienti',this)">👥 <span>Clienti</span></button>
+              <button class="gnav" onclick="guidaSezione('camere',this)">🛏️ <span>Camere</span></button>
+              <button class="gnav" onclick="guidaSezione('stampa-g',this)">🖨️ <span>Stampa</span></button>
+              <button class="gnav" onclick="guidaSezione('questura-g',this)">🚔 <span>Questura</span></button>
+              <button class="gnav" onclick="guidaSezione('contabilita-g',this)">💰 <span>Contabilità</span></button>
+              <button class="gnav" onclick="guidaSezione('impostazioni',this)">⚙️ <span>Impostazioni</span></button>
+              <button class="gnav" onclick="guidaSezione('faq',this)">❓ <span>Domande frequenti</span></button>
+            </div>
+            <div style="padding:12px;border-top:1px solid var(--border)">
+              <button onclick="scaricaGuidaPDF()" class="btn btn-outline btn-sm" style="width:100%;justify-content:center">
+                ⬇️ Scarica PDF
+              </button>
+            </div>
+          </div>
+
+          <!-- CONTENUTO -->
+          <div style="flex:1;overflow-y:auto;padding:32px 36px;background:var(--bg)" id="guida-content">
+
+            <!-- ACCESSO -->
+            <div class="gs" id="gs-accesso">
+              <div class="gs-header"><div class="gs-icon" style="background:linear-gradient(135deg,#0D2F5A,#1A6FA8)">🔑</div>
+                <div><div class="gs-title">Accesso al Sistema</div><div class="gs-sub">Login e ruoli utente</div></div></div>
+              <p class="gs-p">Il gestionale è accessibile da qualsiasi dispositivo aprendo il browser all'indirizzo del sistema. Sono previsti due livelli di accesso: <strong>Admin</strong> (completo) e <strong>Proprietario</strong> (prenotazioni e calendario).</p>
+              <div class="gs-card">
+                <div class="gs-card-title">Come accedere</div>
+                <div class="gs-step"><div class="gs-num">1</div>Inserire la propria <strong>email</strong></div>
+                <div class="gs-step"><div class="gs-num">2</div>Inserire la <strong>password</strong> fornita dall'amministratore</div>
+                <div class="gs-step"><div class="gs-num">3</div>Cliccare <strong>Accedi</strong></div>
+              </div>
+              <div class="gs-card" style="margin-top:14px">
+                <div class="gs-card-title">Confronto ruoli</div>
+                <table class="gs-table">
+                  <tr><th>Funzione</th><th>Admin</th><th>Proprietario</th><th>Visual</th></tr>
+                  <tr><td>Dashboard</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+                  <tr><td>Calendario</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓</td></tr>
+                  <tr><td>Prenotazioni</td><td class="ok">✓</td><td class="ok">✓</td><td class="ok">✓ (sola lettura)</td></tr>
+                  <tr><td>Clienti</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">✗</td></tr>
+                  <tr><td>Check-in / Check-out</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">✗</td></tr>
+                  <tr><td>Stampa</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">✗</td></tr>
+                  <tr><td>Camere (gestione)</td><td class="ok">✓</td><td class="ok">✓</td><td class="no">✗</td></tr>
+                  <tr><td>Impostazioni utenti</td><td class="ok">✓</td><td class="no">✗</td><td class="no">✗</td></tr>
+                </table>
+              </div>
+            </div>
+
+            <!-- DASHBOARD -->
+            <div class="gs" id="gs-dashboard" style="display:none">
+              <div class="gs-header"><div class="gs-icon" style="background:linear-gradient(135deg,#1A6FA8,#2AA1A0)">📊</div>
+                <div><div class="gs-title">Dashboard</div><div class="gs-sub">Panoramica in tempo reale</div></div></div>
+              <p class="gs-p">La Dashboard è la schermata principale al login. Mostra le statistiche aggiornate della struttura e i prossimi arrivi.</p>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+                <div class="gs-stat-card" style="border-left-color:#1A6FA8"><div class="gs-stat-label">Prenotazioni oggi</div><div class="gs-stat-desc">Check-in e check-out previsti per oggi</div></div>
+                <div class="gs-stat-card" style="border-left-color:#2AA1A0"><div class="gs-stat-label">Camere occupate</div><div class="gs-stat-desc">Camere in uso rispetto al totale disponibile</div></div>
+                <div class="gs-stat-card" style="border-left-color:#1A6FA8"><div class="gs-stat-label">Prenotazioni totali</div><div class="gs-stat-desc">Numero complessivo nel sistema</div></div>
+                <div class="gs-stat-card" style="border-left-color:#2AA1A0"><div class="gs-stat-label">Incasso mese</div><div class="gs-stat-desc">Somma prezzi prenotazioni del mese corrente</div></div>
+              </div>
+              <div class="gs-card">
+                <div class="gs-card-title">Stati prenotazione</div>
+                <table class="gs-table">
+                  <tr><th>Badge</th><th>Significato</th></tr>
+                  <tr><td><span class="gs-badge" style="background:#DCF0FF;color:#1A6FA8">Arrivo oggi</span></td><td>Check-in previsto per oggi</td></tr>
+                  <tr><td><span class="gs-badge" style="background:#E0F5F5;color:#2AA1A0">In soggiorno ✓</span></td><td>Ospite presente – check-in confermato</td></tr>
+                  <tr><td><span class="gs-badge" style="background:#E3F0F8;color:#6A8DA8">Partenza oggi</span></td><td>Check-out previsto per oggi</td></tr>
+                  <tr><td><span class="gs-badge" style="background:#EEF7F0;color:#2a7a3b">Futura</span></td><td>Prenotazione con data futura</td></tr>
+                  <tr><td><span class="gs-badge" style="background:#E3F0F8;color:#6A8DA8">Conclusa</span></td><td>Soggiorno terminato</td></tr>
+                </table>
+              </div>
+            </div>
+
+            <!-- CALENDARIO -->
+            <div class="gs" id="gs-calendario" style="display:none">
+              <div class="gs-header"><div class="gs-icon" style="background:linear-gradient(135deg,#1A6FA8,#2AA1A0)">📅</div>
+                <div><div class="gs-title">Calendario</div><div class="gs-sub">Visualizzazione mensile prenotazioni</div></div></div>
+              <p class="gs-p">Il Calendario mostra tutte le prenotazioni su griglia mensile. Il <strong>mese corrente appare sempre in cima</strong>, seguito dai successivi 11 mesi.</p>
+              <div class="gs-card">
+                <div class="gs-card-title">Come leggere il calendario</div>
+                <div class="gs-step"><div class="gs-dot"></div>Le <strong>righe</strong> rappresentano le singole camere</div>
+                <div class="gs-step"><div class="gs-dot"></div>Le <strong>colonne</strong> rappresentano i giorni del mese</div>
+                <div class="gs-step"><div class="gs-dot"></div>Le <strong>barre blu</strong> indicano prenotazioni attive con nominativo ospite</div>
+                <div class="gs-step"><div class="gs-dot"></div>Il <strong>giorno corrente</strong> è evidenziato con sfondo blu scuro</div>
+                <div class="gs-step"><div class="gs-dot"></div>I <strong>fine settimana</strong> hanno sfondo più scuro</div>
+              </div>
+              <div class="gs-info">📅 I pulsanti <strong>◀ Anno prec.</strong> e <strong>Anno succ. ▶</strong> consentono di navigare tra gli anni per consultare prenotazioni passate o pianificarne di future.</div>
+            </div>
+
+            <!-- PRENOTAZIONI -->
+            <div class="gs" id="gs-prenotazioni" style="display:none">
+              <div class="gs-header"><div class="gs-icon" style="background:linear-gradient(135deg,#1A6FA8,#2AA1A0)">📋</div>
+                <div><div class="gs-title">Prenotazioni</div><div class="gs-sub">Gestione completa dei soggiorni</div></div></div>
+              <p class="gs-p">La sezione Prenotazioni permette di gestire l'intero ciclo di vita di ogni soggiorno: dalla creazione alla conclusione.</p>
+              <div class="gs-card" style="margin-bottom:12px">
+                <div class="gs-card-title" style="background:#2AA1A0">➕ Creare una nuova prenotazione</div>
+                <div style="padding:14px;font-size:13px;color:var(--text);line-height:1.7">
+                  Cliccare <strong>+ Nuova prenotazione</strong>. Il sistema suggerisce automaticamente i clienti già presenti in archivio durante la digitazione del nome.
+                </div>
+                <table class="gs-table" style="border-top:1px solid var(--border)">
+                  <tr><th>Campo</th><th>Note</th></tr>
+                  <tr><td><strong>Cognome / Nome</strong></td><td>Obbligatori</td></tr>
+                  <tr><td>Telefono / Email</td><td>Facoltativi</td></tr>
+                  <tr><td>Canale prenotazione</td><td>Booking, Telefono, Airbnb, ecc.</td></tr>
+                  <tr><td><strong>Camera</strong></td><td>Obbligatorio – controlla disponibilità</td></tr>
+                  <tr><td><strong>Check-in / Check-out</strong></td><td>Obbligatori</td></tr>
+                  <tr><td>N° persone</td><td>Numero ospiti in camera</td></tr>
+                  <tr><td>Prezzo totale</td><td>In euro</td></tr>
+                </table>
+              </div>
+              <div class="gs-warning">⚠️ Il sistema controlla automaticamente la disponibilità: se la camera è già occupata nelle date selezionate, appare un avviso con il nome dell'ospite in conflitto.</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
+                <div class="gs-card"><div class="gs-card-title">✏️ Modifica</div><div style="padding:12px;font-size:13px;color:var(--text)">Cliccare ✏️ nella riga. Tutti i campi sono modificabili.</div></div>
+                <div class="gs-card"><div class="gs-card-title" style="background:#FDECEA;color:#C0392B">🗑️ Elimina</div><div style="padding:12px;font-size:13px;color:var(--text)">Cliccare 🗑️. Richiede conferma. Operazione irreversibile.</div></div>
+              </div>
+            </div>
+
+            <!-- CHECK-IN / CHECK-OUT -->
+            <div class="gs" id="gs-checkin" style="display:none">
+              <div class="gs-header"><div class="gs-icon" style="background:linear-gradient(135deg,#2AA1A0,#1A6FA8)">✅</div>
+                <div><div class="gs-title">Check-in / Check-out</div><div class="gs-sub">Gestione arrivi, anagrafica ospiti e partenze</div></div></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+                <div class="gs-card">
+                  <div class="gs-card-title" style="background:#2AA1A0">✅ Check-in</div>
+                  <div style="padding:14px;font-size:13px;color:var(--text);line-height:1.7">
+                    Il pulsante appare quando la data è oggi e il check-in non è ancora confermato.<br><br>
+                    <strong>Si registra:</strong><br>
+                    • Ora arrivo (pre-compilata automatica)<br>
+                    • N° ospiti totali<br>
+                    • <strong>Anagrafica completa di ogni ospite</strong><br>
+                    • Note di arrivo
+                  </div>
+                </div>
+                <div class="gs-card">
+                  <div class="gs-card-title" style="background:#1A6FA8">🏁 Check-out</div>
+                  <div style="padding:14px;font-size:13px;color:var(--text);line-height:1.7">
+                    Appare dopo la conferma del check-in.<br><br>
+                    <strong>Si registra:</strong><br>
+                    • Ora partenza (automatica)<br>
+                    • Importo saldato<br>
+                    • Note di partenza<br><br>
+                    Include <strong>🖨️ Stampa ricevuta</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div class="gs-card" style="margin-bottom:14px">
+                <div class="gs-card-title">👥 Anagrafica ospiti al check-in</div>
+                <div style="padding:14px;font-size:13px;color:var(--text);line-height:1.7">
+                  Per ogni ospite viene compilata una <strong>scheda individuale</strong> con i dati necessari per la comunicazione alla Questura (Alloggiati Web):
+                </div>
+                <table class="gs-table" style="border-top:1px solid var(--border)">
+                  <tr><th>Campo</th><th>Note</th></tr>
+                  <tr><td><strong>Cognome / Nome</strong></td><td>Obbligatori per tutti gli ospiti</td></tr>
+                  <tr><td>Sesso</td><td>M / F</td></tr>
+                  <tr><td>Data di nascita</td><td>Formato gg/mm/aaaa</td></tr>
+                  <tr><td>Cittadinanza</td><td>Italiana / Straniera</td></tr>
+                  <tr><td><strong>Tipo documento</strong></td><td>CdI, Passaporto, Patente, Permesso di soggiorno</td></tr>
+                  <tr><td><strong>Numero documento</strong></td><td>Obbligatorio per il capofamiglia</td></tr>
+                </table>
+                <div style="padding:12px 14px;font-size:12px;color:var(--text-muted);border-top:1px solid var(--border)">
+                  Il primo ospite è sempre il <strong>capofamiglia/prenotante</strong>. Gli altri sono i familiari/accompagnatori. Le schede si aggiungono automaticamente in base al numero di ospiti dichiarato.
+                </div>
+              </div>
+
+              <div class="gs-card" style="margin-bottom:14px">
+                <div class="gs-card-title" style="background:var(--surface2);color:var(--text)">📋 Inserimento anticipato in prenotazione</div>
+                <div style="padding:14px;font-size:13px;color:var(--text);line-height:1.7">
+                  Nel modal <strong>Nuova prenotazione</strong> è disponibile il pulsante <em>"👥 Aggiungi dati ospiti aggiuntivi (opzionale)"</em>.<br>
+                  Se conosci già i dati degli ospiti puoi inserirli subito; altrimenti si completano obbligatoriamente al check-in.
+                </div>
+              </div>
+
+              <div class="gs-info">📋 I dati del documento vengono salvati automaticamente nella scheda cliente per consultazioni future.</div>
+              <div style="margin-top:14px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px">
+                <div style="font-weight:600;font-size:13px;color:var(--accent);margin-bottom:10px">Dove trovare i pulsanti Check-in / Check-out</div>
+                <div class="gs-step"><div class="gs-dot"></div>Nella <strong>tabella Prenotazioni</strong> → colonna azioni a destra</div>
+                <div class="gs-step"><div class="gs-dot"></div>Nelle <strong>card Camere</strong> → sotto il nominativo dell'ospite</div>
+              </div>
+            </div>
+
+            <!-- CLIENTI -->
+            <div class="gs" id="gs-clienti" style="display:none">
+              <div class="gs-header"><div class="gs-icon" style="background:linear-gradient(135deg,#1A6FA8,#2AA1A0)">👥</div>
+                <div><div class="gs-title">Clienti</div><div class="gs-sub">Anagrafica e storico ospiti</div></div></div>
+              <p class="gs-p">L'archivio clienti si popola <strong>automaticamente</strong> ad ogni prenotazione. Per ogni ospite sono disponibili dati anagrafici completi, storico soggiorni e totale speso.</p>
+              <div class="gs-card" style="margin-bottom:14px">
+                <div class="gs-card-title">Dati scheda cliente</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;padding:4px 0">
+                  <div style="padding:10px 16px;border-top:1px solid var(--border);border-right:1px solid var(--border)"><div class="gs-field-label">Nominativo</div>Cognome e nome</div>
+                  <div style="padding:10px 16px;border-top:1px solid var(--border)"><div class="gs-field-label">Contatti</div>Telefono ed email</div>
+                  <div style="padding:10px 16px;border-top:1px solid var(--border);border-right:1px solid var(--border)"><div class="gs-field-label">Indirizzo</div>Via, città, provincia, CAP</div>
+                  <div style="padding:10px 16px;border-top:1px solid var(--border)"><div class="gs-field-label">Documento</div>Tipo e numero</div>
+                  <div style="padding:10px 16px;border-top:1px solid var(--border);border-right:1px solid var(--border)"><div class="gs-field-label">Canale</div>Come prenota abitualmente</div>
+                  <div style="padding:10px 16px;border-top:1px solid var(--border)"><div class="gs-field-label">Note</div>Annotazioni libere</div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+                <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center">
+                  <div style="font-size:24px;margin-bottom:8px">📋</div>
+                  <div style="font-weight:600;font-size:13px;color:var(--text);margin-bottom:4px">Storico</div>
+                  <div style="font-size:12px;color:var(--text-muted)">Tutti i soggiorni con date e prezzi + stampa scheda</div>
+                </div>
+                <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center">
+                  <div style="font-size:24px;margin-bottom:8px">✏️</div>
+                  <div style="font-weight:600;font-size:13px;color:var(--text);margin-bottom:4px">Modifica</div>
+                  <div style="font-size:12px;color:var(--text-muted)">Aggiorna dati anagrafici e note</div>
+                </div>
+                <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center">
+                  <div style="font-size:24px;margin-bottom:8px">🗑️</div>
+                  <div style="font-weight:600;font-size:13px;color:var(--text);margin-bottom:4px">Elimina</div>
+                  <div style="font-size:12px;color:var(--text-muted)">Rimuove la scheda (prenotazioni restano)</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CAMERE -->
+            <div class="gs" id="gs-camere" style="display:none">
+              <div class="gs-header"><div class="gs-icon" style="background:linear-gradient(135deg,#1A6FA8,#2AA1A0)">🛏️</div>
+                <div><div class="gs-title">Camere</div><div class="gs-sub">Stato in tempo reale (solo Admin)</div></div></div>
+              <p class="gs-p">Ogni camera è rappresentata da una card che mostra lo stato aggiornato automaticamente in base alle prenotazioni. Nessun intervento manuale richiesto.</p>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+                <div style="background:#fff;border:1px solid var(--border);border-left:4px solid #2a7a3b;border-radius:8px;padding:14px">
+                  <span class="gs-badge" style="background:#EEF7F0;color:#2a7a3b;display:inline-block;margin-bottom:8px">Libera</span>
+                  <div style="font-size:13px;color:var(--text)">Nessuna prenotazione attiva</div>
+                </div>
+                <div style="background:#fff;border:1px solid var(--border);border-left:4px solid #1A6FA8;border-radius:8px;padding:14px">
+                  <span class="gs-badge" style="background:#DCF0FF;color:#1A6FA8;display:inline-block;margin-bottom:8px">Arrivo oggi</span>
+                  <div style="font-size:13px;color:var(--text)">Ospite atteso → pulsante Check-in diretto</div>
+                </div>
+                <div style="background:#fff;border:1px solid var(--border);border-left:4px solid #2AA1A0;border-radius:8px;padding:14px">
+                  <span class="gs-badge" style="background:#E0F5F5;color:#2AA1A0;display:inline-block;margin-bottom:8px">In soggiorno</span>
+                  <div style="font-size:13px;color:var(--text)">Ospite presente con check-in confermato</div>
+                </div>
+                <div style="background:#fff;border:1px solid var(--border);border-left:4px solid #6A8DA8;border-radius:8px;padding:14px">
+                  <span class="gs-badge" style="background:#E3F0F8;color:#6A8DA8;display:inline-block;margin-bottom:8px">Partenza oggi</span>
+                  <div style="font-size:13px;color:var(--text)">Ospite in partenza → pulsante Check-out diretto</div>
+                </div>
+              </div>
+              <div class="gs-info">🔄 Lo stato si aggiorna automaticamente in tempo reale confrontando le prenotazioni con la data odierna.</div>
+            </div>
+
+            <!-- STAMPA -->
+            <div class="gs" id="gs-stampa-g" style="display:none">
+              <div class="gs-header"><div class="gs-icon" style="background:linear-gradient(135deg,#1A6FA8,#2AA1A0)">🖨️</div>
+                <div><div class="gs-title">Stampa</div><div class="gs-sub">Riepilogo prenotazioni per periodo</div></div></div>
+              <p class="gs-p">La sezione Stampa genera un riepilogo delle prenotazioni con totale incassi per il periodo selezionato. La stampa si apre in una finestra dedicata, formattata e pronta per il browser.</p>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+                <div class="gs-card"><div class="gs-card-title">📆 Giorno specifico</div><div style="padding:12px;font-size:13px;color:var(--text)">Selezionare una data precisa dal calendario</div></div>
+                <div class="gs-card"><div class="gs-card-title">📅 Settimana corrente</div><div style="padding:12px;font-size:13px;color:var(--text)">Da lunedì a domenica della settimana in corso</div></div>
+                <div class="gs-card"><div class="gs-card-title">🗓️ Mese corrente</div><div style="padding:12px;font-size:13px;color:var(--text)">Tutte le prenotazioni del mese in corso</div></div>
+                <div class="gs-card"><div class="gs-card-title">📊 Intervallo personalizzato</div><div style="padding:12px;font-size:13px;color:var(--text)">Scegliere liberamente inizio e fine periodo</div></div>
+              </div>
+              <div class="gs-info">💡 Per salvare come PDF: nella finestra di stampa del browser selezionare <strong>"Salva come PDF"</strong> come stampante.</div>
+            </div>
+
+            <!-- QUESTURA -->
+            <div class="gs" id="gs-questura-g" style="display:none">
+              <div class="gs-header"><div class="gs-icon" style="background:linear-gradient(135deg,#0D2F5A,#1A6FA8)">🚔</div>
+                <div><div class="gs-title">Questura / Alloggiati Web</div><div class="gs-sub">Comunicazione obbligatoria delle presenze</div></div></div>
+              <div style="background:#FEF3CD;border-left:4px solid #F5D87A;border-radius:0 8px 8px 0;padding:14px 16px;font-size:13px;color:#7a5c00;margin-bottom:16px">
+                ⚖️ <strong>Obbligo di legge</strong> — Art. 109 TULPS: le generalità degli ospiti vanno comunicate entro <strong>24 ore dall'arrivo</strong> (6 ore per soggiorni inferiori alle 24 ore). Conservare le ricevute per 5 anni.
+              </div>
+              <div class="gs-card" style="margin-bottom:14px">
+                <div class="gs-card-title">Come funziona il modulo</div>
+                <div class="gs-step"><div class="gs-num">1</div><div><strong>Imposta</strong> una volta sola il codice struttura rilasciato dalla Questura, l'username Alloggiati Web e il numero di camere disponibili</div></div>
+                <div class="gs-step"><div class="gs-num">2</div><div>Dopo il check-in degli ospiti, vai in <strong>🚔 Questura</strong> e seleziona la data</div></div>
+                <div class="gs-step"><div class="gs-num">3</div><div>Seleziona gli ospiti con il checkbox e clicca <strong>⬇️ Genera file TXT</strong></div></div>
+                <div class="gs-step"><div class="gs-num">4</div><div>Il file si scarica automaticamente. Accedi ad <strong>Alloggiati Web</strong> → Invio File → carica il file → Elabora → Invia</div></div>
+                <div class="gs-step"><div class="gs-num">5</div><div>Il sistema salva automaticamente lo storico delle comunicazioni generate</div></div>
+              </div>
+              <div class="gs-card" style="margin-bottom:14px">
+                <div class="gs-card-title" style="background:var(--surface2);color:var(--text)">📊 Stati degli ospiti</div>
+                <table class="gs-table">
+                  <tr><th>Badge</th><th>Significato</th></tr>
+                  <tr><td><span class="gs-badge" style="background:#DCF0FF;color:#1A6FA8">Da inviare</span></td><td>Check-in confermato, comunicazione non ancora generata</td></tr>
+                  <tr><td><span class="gs-badge" style="background:#FDECEA;color:#C0392B">⚠️ Scaduto</span></td><td>Sono passate più di 24 ore senza comunicazione</td></tr>
+                  <tr><td><span class="gs-badge" style="background:#EEF7F0;color:#2a7a3b">✓ Comunicato</span></td><td>Già incluso in un file TXT generato</td></tr>
+                </table>
+              </div>
+              <div class="gs-card" style="margin-bottom:14px">
+                <div class="gs-card-title" style="background:var(--surface2);color:var(--text)">📁 Il file TXT generato</div>
+                <div style="padding:14px;font-size:13px;color:var(--text);line-height:1.7">
+                  Il file segue il <strong>tracciato record ufficiale</strong> della Polizia di Stato. Contiene una riga per ogni ospite:<br>
+                  • <strong>Tipo 18</strong> = capofamiglia/prenotante<br>
+                  • <strong>Tipo 20</strong> = familiari/accompagnatori<br><br>
+                  Per ospiti con dati mancanti appare il pulsante ✏️ che apre il check-in per completarli.
+                </div>
+              </div>
+              <div class="gs-info">💡 Per ottenere le credenziali Alloggiati Web: contatta la Questura competente per territorio con la documentazione della struttura (licenza, CIN, documento d'identità titolare).</div>
+            </div>
+
+            <!-- CONTABILITÀ -->
+            <div class="gs" id="gs-contabilita-g" style="display:none">
+              <div class="gs-header">
+                <div class="gs-icon" style="background:linear-gradient(135deg,#1A6FA8,#2AA1A0)">💰</div>
+                <div><div class="gs-title">Contabilità</div><div class="gs-sub">Entrate, uscite e saldo della struttura</div></div>
+              </div>
+              <p class="gs-p">Il modulo Contabilità permette di registrare tutti i movimenti economici della struttura — incassi da ospiti, spese operative, utenze, commissioni OTA — e di monitorare il saldo in tempo reale.</p>
+
+              <div class="gs-card" style="margin-bottom:14px">
+                <div class="gs-card-title">Come inserire un movimento</div>
+                <div class="gs-step"><div class="gs-num">1</div><div>Cliccare il pulsante <strong>+ Nuovo movimento</strong> in alto a destra</div></div>
+                <div class="gs-step"><div class="gs-num">2</div><div>Selezionare la <strong>data</strong> e il <strong>tipo</strong>: Entrata o Uscita</div></div>
+                <div class="gs-step"><div class="gs-num">3</div><div>Inserire l'<strong>importo</strong> e scegliere la <strong>categoria</strong> dal menu</div></div>
+                <div class="gs-step"><div class="gs-num">4</div><div>Aggiungere una <strong>descrizione</strong> (obbligatoria), il metodo di pagamento e l'eventuale riferimento fattura</div></div>
+                <div class="gs-step"><div class="gs-num">5</div><div>Cliccare <strong>Salva movimento</strong> — il dato viene sincronizzato immediatamente su cloud</div></div>
+              </div>
+
+              <div class="gs-card" style="margin-bottom:14px">
+                <div class="gs-card-title" style="background:var(--surface2);color:var(--text)">📊 Le 4 card KPI</div>
+                <table class="gs-table">
+                  <tr><th>Card</th><th>Cosa mostra</th></tr>
+                  <tr><td><strong style="color:#2a7a3b">Entrate totali</strong></td><td>Somma di tutti i movimenti di tipo Entrata nel sistema</td></tr>
+                  <tr><td><strong style="color:var(--danger)">Uscite totali</strong></td><td>Somma di tutti i movimenti di tipo Uscita nel sistema</td></tr>
+                  <tr><td><strong>Saldo</strong></td><td>Entrate − Uscite. Verde se positivo, rosso se negativo</td></tr>
+                  <tr><td><strong style="color:var(--accent2)">Movimenti</strong></td><td>Numero totale di movimenti registrati</td></tr>
+                </table>
+              </div>
+
+              <div class="gs-card" style="margin-bottom:14px">
+                <div class="gs-card-title" style="background:var(--surface2);color:var(--text)">🔍 Filtri disponibili</div>
+                <table class="gs-table">
+                  <tr><th>Filtro</th><th>Opzioni</th></tr>
+                  <tr><td>Tipo</td><td>Entrate e uscite / Solo entrate / Solo uscite</td></tr>
+                  <tr><td>Categoria</td><td>Tutte oppure una categoria specifica</td></tr>
+                  <tr><td>Periodo</td><td>Mese corrente / Anno corrente / Tutti / Periodo personalizzato</td></tr>
+                  <tr><td>Ricerca</td><td>Testo libero sulla descrizione del movimento</td></tr>
+                </table>
+                <div style="padding:10px 16px;font-size:13px;color:var(--text)">
+                  La <strong>barra riepilogo</strong> in fondo alla tabella mostra entrate, uscite e saldo del solo periodo filtrato, indipendentemente dai KPI globali in cima.
+                </div>
+              </div>
+
+              <div class="gs-card" style="margin-bottom:14px">
+                <div class="gs-card-title" style="background:var(--surface2);color:var(--text)">📁 Export CSV</div>
+                <div style="padding:14px;font-size:13px;color:var(--text);line-height:1.7">
+                  Il pulsante <strong>⬇️ Export CSV</strong> scarica tutti i movimenti del filtro attivo in formato CSV, apribile direttamente in Excel o Google Sheets.<br>
+                  Il file include: data, tipo, categoria, descrizione, importo, metodo di pagamento, riferimento e note.
+                </div>
+              </div>
+
+              <div class="gs-card" style="margin-bottom:14px">
+                <div class="gs-card-title" style="background:var(--surface2);color:var(--text)">🏷️ Categorie</div>
+                <div style="padding:14px;font-size:13px;color:var(--text);line-height:1.7">
+                  Al primo avvio il sistema carica automaticamente <strong>18 categorie predefinite</strong> suddivise tra entrate e uscite (Soggiorno, Pulizie, Utenze, Commissioni OTA, ecc.).<br><br>
+                  L'<strong>Admin</strong> può aggiungere o rimuovere categorie dalla sezione <strong>⚙️ Impostazioni → Categorie contabilità</strong>.
+                </div>
+              </div>
+
+              <div class="gs-info">💡 Il <strong>saldo contabilità del mese</strong> è visibile anche nella Dashboard, accanto alle altre statistiche principali.</div>
+            </div>
+
+            <!-- IMPOSTAZIONI -->
+            <div class="gs" id="gs-impostazioni" style="display:none">
+              <div class="gs-header"><div class="gs-icon" style="background:linear-gradient(135deg,#0D2F5A,#1A6FA8)">⚙️</div>
+                <div><div class="gs-title">Impostazioni</div><div class="gs-sub">Gestione utenti – solo Admin</div></div></div>
+              <p class="gs-p">La sezione Impostazioni consente di gestire gli utenti del sistema ed è accessibile solo agli Admin.</p>
+              <div class="gs-card" style="margin-bottom:14px">
+                <div class="gs-card-title">Come aggiungere un nuovo utente</div>
+                <div class="gs-step"><div class="gs-num">1</div>Creare l'account su <strong>Firebase Authentication</strong> (console.firebase.google.com)</div>
+                <div class="gs-step"><div class="gs-num">2</div>Aggiungere il documento in <strong>Firestore → utenti → {uid}</strong> con campi: email, nome, ruolo, stato</div>
+                <div class="gs-step"><div class="gs-num">3</div>L'utente può accedere al gestionale con le proprie credenziali</div>
+              </div>
+              <div class="gs-warning" style="background:#FDECEA;border-left-color:#C0392B;color:#7a1c0e">
+                ⚠️ Non eliminare mai il proprio account Admin dalla sezione Impostazioni. In caso di necessità agire direttamente dalla console Firebase.
+              </div>
+            </div>
+
+            <!-- FAQ -->
+            <div class="gs" id="gs-faq" style="display:none">
+              <div class="gs-header"><div class="gs-icon" style="background:linear-gradient(135deg,#2AA1A0,#1A6FA8)">❓</div>
+                <div><div class="gs-title">Domande frequenti</div><div class="gs-sub">Risposte ai problemi più comuni</div></div></div>
+              <div class="gs-faq-item"><div class="gs-faq-q">❓ Ho inserito date sbagliate nella prenotazione. Come correggo?</div><div class="gs-faq-a">Cliccare ✏️ nella riga della prenotazione e modificare le date. Il sistema controlla automaticamente le sovrapposizioni.</div></div>
+              <div class="gs-faq-item"><div class="gs-faq-q">❓ Il pulsante Check-in non appare.</div><div class="gs-faq-a">Appare solo se la data di check-in è uguale o precedente a oggi e il check-in non è ancora confermato. Verificare la data nella prenotazione e aggiornare la pagina.</div></div>
+              <div class="gs-faq-item"><div class="gs-faq-q">❓ Ho effettuato il check-in per errore.</div><div class="gs-faq-a">Contattare l'amministratore che modificherà il campo <em>checkinConfermato</em> direttamente su Firestore impostandolo a false.</div></div>
+              <div class="gs-faq-item"><div class="gs-faq-q">❓ Come inserisco i dati degli ospiti aggiuntivi (non il prenotante)?</div><div class="gs-faq-a">In fase di prenotazione clicca "👥 Aggiungi dati ospiti aggiuntivi" per inserirli subito (opzionale). Al momento del check-in, il sistema mostra automaticamente una scheda per ogni ospite in base al numero dichiarato: compilarle è obbligatorio per generare il file Alloggiati Web.</div></div>
+              <div class="gs-faq-item"><div class="gs-faq-q">❓ Come genero il file per la Questura?</div><div class="gs-faq-a">Dopo il check-in vai in 🚔 Questura → seleziona la data → metti il segno di spunta sugli ospiti → clicca "⬇️ Genera file TXT". Il file si scarica automaticamente. Poi aprilo su Alloggiati Web (alloggiatiweb.poliziadistato.it) → Invio File → carica → Elabora → Invia.</div></div>
+              <div class="gs-faq-item"><div class="gs-faq-q">❓ Il file TXT viene rifiutato da Alloggiati Web.</div><div class="gs-faq-a">Verificare che tutti i dati obbligatori siano presenti: cognome, nome e documento del capofamiglia. Se l'ospite mostra il badge "⚠️ documento mancante", clicca ✏️ per completare i dati e poi rigenera il file.</div></div>
+              <div class="gs-faq-item"><div class="gs-faq-q">❓ Il calendario non mostra alcune prenotazioni.</div><div class="gs-faq-a">Verificare che le date ricadano nel periodo visualizzato. Usare i pulsanti Anno prec./Anno succ. per navigare all'anno corretto.</div></div>
+              <div class="gs-faq-item"><div class="gs-faq-q">❓ Come aggiungere un nuovo utente?</div><div class="gs-faq-a">Creare l'account in Firebase Authentication, poi aggiungere il documento in Firestore con ruolo "admin", "proprietario" o "visual" e stato "approvato".</div></div>
+              <div class="gs-faq-item"><div class="gs-faq-q">❓ Posso usare il gestionale da smartphone?</div><div class="gs-faq-a">Sì, l'interfaccia è completamente responsive e si adatta a qualsiasi dimensione di schermo.</div></div>
+              <div class="gs-faq-item"><div class="gs-faq-q">❓ Come salvare un riepilogo come PDF?</div><div class="gs-faq-a">Dalla sezione Stampa, cliccare 🖨️ Stampa. Nella finestra del browser selezionare "Salva come PDF" come stampante.</div></div>
+              <div class="gs-faq-item"><div class="gs-faq-q">❓ Dove registro l'incasso di una prenotazione in contabilità?</div><div class="gs-faq-a">Vai in 💰 Contabilità → Nuovo movimento → Tipo: Entrata → Categoria: "Soggiorno / affitto" → inserisci l'importo e come descrizione il nome dell'ospite. Il sistema non collega automaticamente prenotazioni e contabilità, così hai piena libertà nella registrazione (es. caparra separata dal saldo).</div></div>
+              <div class="gs-faq-item"><div class="gs-faq-q">❓ Posso esportare la contabilità per il commercialista?</div><div class="gs-faq-a">Sì. Dalla sezione Contabilità imposta il filtro Periodo su "Anno corrente" (o un intervallo personalizzato) e clicca ⬇️ Export CSV. Il file .csv si apre direttamente in Excel o Google Sheets con tutte le colonne necessarie: data, tipo, categoria, descrizione, importo, metodo di pagamento e riferimento fattura.</div></div>
+              <div class="gs-faq-item"><div class="gs-faq-q">❓ Come aggiungo una categoria di spesa non presente?</div><div class="gs-faq-a">Solo gli Admin possono farlo: vai in ⚙️ Impostazioni → sezione "Categorie contabilità" → clicca "⚙️ Gestisci categorie" → inserisci il nome e seleziona il tipo (Entrata / Uscita / Entrambe) → Aggiungi. La nuova categoria sarà subito disponibile nel form di inserimento movimenti.</div></div>
+            </div>
+
+          </div><!-- fine guida-content -->
+        </div>
+      </div>
+
+      <!-- CONTABILITÀ -->
+      <div class="page no-visual" id="page-contabilita">
+        <div class="toolbar">
+          <div class="page-title" style="margin:0">💰 Contabilità</div>
+          <div style="display:flex;gap:8px" class="no-print">
+            <button class="btn btn-outline btn-sm" onclick="esportaCSV()">⬇️ Export CSV</button>
+            <button class="btn btn-primary no-print" onclick="openModalMovimento()">+ Nuovo movimento</button>
+          </div>
+        </div>
+
+        <!-- KPI -->
+        <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:24px">
+          <div class="stat-card" style="border-left:4px solid #2a7a3b">
+            <div class="stat-label">Entrate totali</div>
+            <div class="stat-value" id="cont-kpi-entrate" style="color:#2a7a3b">€0</div>
+            <div class="stat-sub" id="cont-kpi-entrate-sub">0 movimenti</div>
+          </div>
+          <div class="stat-card" style="border-left:4px solid var(--danger)">
+            <div class="stat-label">Uscite totali</div>
+            <div class="stat-value" id="cont-kpi-uscite" style="color:var(--danger)">€0</div>
+            <div class="stat-sub" id="cont-kpi-uscite-sub">0 movimenti</div>
+          </div>
+          <div class="stat-card" id="cont-kpi-saldo-card" style="border-left:4px solid var(--accent)">
+            <div class="stat-label">Saldo</div>
+            <div class="stat-value" id="cont-kpi-saldo">€0</div>
+            <div class="stat-sub">entrate − uscite</div>
+          </div>
+          <div class="stat-card" style="border-left:4px solid var(--accent2)">
+            <div class="stat-label">Movimenti</div>
+            <div class="stat-value" id="cont-kpi-tot">0</div>
+            <div class="stat-sub" id="cont-kpi-periodo">nel periodo</div>
+          </div>
+        </div>
+
+        <!-- Filtri -->
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;align-items:center" class="no-print">
+          <select class="form-control" id="cont-filtro-tipo" style="width:160px" onchange="renderContabilita()">
+            <option value="">Entrate e uscite</option>
+            <option value="entrata">Solo entrate</option>
+            <option value="uscita">Solo uscite</option>
+          </select>
+          <select class="form-control" id="cont-filtro-cat" style="width:180px" onchange="renderContabilita()">
+            <option value="">Tutte le categorie</option>
+          </select>
+          <select class="form-control" id="cont-filtro-periodo" style="width:160px" onchange="aggiornaFiltroPeriodo()">
+            <option value="mese">Mese corrente</option>
+            <option value="anno">Anno corrente</option>
+            <option value="tutto">Tutti</option>
+            <option value="custom">Periodo custom</option>
+          </select>
+          <div id="cont-filtro-custom" style="display:none;gap:8px;align-items:center;display:none">
+            <input type="date" class="form-control" id="cont-da" style="width:150px" onchange="renderContabilita()">
+            <span style="color:var(--text-muted)">→</span>
+            <input type="date" class="form-control" id="cont-a" style="width:150px" onchange="renderContabilita()">
+          </div>
+          <input class="form-control" id="cont-search" placeholder="🔍 Cerca descrizione..." style="flex:1;min-width:180px" oninput="renderContabilita()">
+        </div>
+
+        <!-- Tabella -->
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Categoria</th>
+                <th>Descrizione</th>
+                <th>Metodo</th>
+                <th style="text-align:right">Importo</th>
+                <th class="no-print"></th>
+              </tr>
+            </thead>
+            <tbody id="tb-contabilita"></tbody>
+          </table>
+        </div>
+
+        <!-- Totale periodo -->
+        <div id="cont-totale-bar" style="margin-top:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;display:flex;gap:28px;flex-wrap:wrap;font-size:14px"></div>
+      </div>
+
+      <!-- CAMERE -->
+      <div class="page" id="page-camere">
+        <div class="toolbar">
+          <div class="page-title" style="margin:0">Camere</div>
+          <button class="btn btn-primary no-visual no-print" onclick="openModalCamera()">+ Aggiungi camera</button>
+        </div>
+        <div class="camere-grid" id="camere-grid"></div>
+      </div>
+
+      <!-- IMPOSTAZIONI -->
+      <div class="page admin-only" id="page-impostazioni">
+        <div class="page-title">Impostazioni</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:16px;font-weight:500;color:var(--text)">Utenti del sistema</div>
+        </div>
+        <div class="table-wrap" style="margin-bottom:28px">
+          <table>
+            <thead><tr><th>Email</th><th>Nome</th><th>Ruolo</th><th>Stato</th><th></th></tr></thead>
+            <tbody id="tb-utenti"></tbody>
+          </table>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:16px;font-weight:500;color:var(--text)">Categorie contabilità</div>
+          <button class="btn btn-outline btn-sm" onclick="openModalCategorie()">⚙️ Gestisci categorie</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Categoria</th><th>Tipo</th><th></th></tr></thead>
+            <tbody id="tb-categorie-imp"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MOVIMENTO CONTABILITÀ -->
+<div class="modal-overlay" id="modal-movimento">
+  <div class="modal">
+    <div class="modal-title" id="modal-mov-title">Nuovo movimento</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Data *</label>
+        <input class="form-control" type="date" id="mov-data">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo *</label>
+        <select class="form-control" id="mov-tipo" onchange="aggiornaCategorieModal()">
+          <option value="entrata">🟢 Entrata</option>
+          <option value="uscita">🔴 Uscita</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Importo (€) *</label>
+        <input class="form-control" type="number" id="mov-importo" placeholder="0.00" step="0.01" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Categoria *</label>
+        <select class="form-control" id="mov-categoria"></select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Descrizione *</label>
+      <input class="form-control" id="mov-descrizione" placeholder="es. Soggiorno famiglia Rossi, acquisto saponi, bolletta luce...">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Metodo di pagamento</label>
+        <select class="form-control" id="mov-metodo">
+          <option value="">— Seleziona —</option>
+          <option>Contanti</option>
+          <option>Bonifico</option>
+          <option>Carta di credito</option>
+          <option>POS</option>
+          <option>Assegno</option>
+          <option>Altro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Riferimento (fattura / ricevuta)</label>
+        <input class="form-control" id="mov-rif" placeholder="es. FT-2026-001">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Note aggiuntive</label>
+      <textarea class="form-control" id="mov-note" rows="2" placeholder="Annotazioni libere..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-movimento')">Annulla</button>
+      <button class="btn btn-primary" onclick="salvaMovimento()">Salva movimento</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CATEGORIE CONTABILITÀ (solo Admin) -->
+<div class="modal-overlay" id="modal-categorie">
+  <div class="modal modal-wide">
+    <div class="modal-title">⚙️ Gestione categorie</div>
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <input class="form-control" id="nuova-cat-nome" placeholder="Nome categoria (es. Pulizie)" style="flex:1">
+      <select class="form-control" id="nuova-cat-tipo" style="width:150px">
+        <option value="entrata">Entrata</option>
+        <option value="uscita">Uscita</option>
+        <option value="entrambi">Entrambe</option>
+      </select>
+      <button class="btn btn-primary" onclick="aggiungiCategoria()">+ Aggiungi</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Categoria</th><th>Tipo</th><th class="no-print"></th></tr></thead>
+        <tbody id="tb-categorie"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-categorie')">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL STORICO CLIENTE -->
+<div class="modal-overlay" id="modal-storico">
+  <div class="modal modal-wide">
+    <div class="modal-title" id="storico-titolo">Storico cliente</div>
+    <div id="storico-body"></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal('modal-storico')">Chiudi</button>
+      <button class="btn btn-primary" onclick="stampaScheda()">🖨️ Stampa scheda</button></div>
+  </div>
+</div>
+
+<!-- MODAL CLIENTE -->
+<div class="modal-overlay" id="modal-cliente">
+  <div class="modal modal-wide">
+    <div class="modal-title" id="modal-cli-title">Nuovo cliente</div>
+    <div class="section-divider">Dati anagrafici</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Cognome *</label><input class="form-control" id="cl-cognome" placeholder="Cognome"></div>
+      <div class="form-group"><label class="form-label">Nome *</label><input class="form-control" id="cl-nome" placeholder="Nome"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Telefono</label><input class="form-control" id="cl-telefono" placeholder="+39 000 0000000" type="tel"></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="cl-email" placeholder="email@esempio.it" type="email"></div>
+    </div>
+    <div class="section-divider">Indirizzo</div>
+    <div class="form-group"><label class="form-label">Via / Indirizzo</label><input class="form-control" id="cl-via" placeholder="Via Roma, 1"></div>
+    <div class="form-row3">
+      <div class="form-group"><label class="form-label">Città</label><input class="form-control" id="cl-citta" placeholder="Milano"></div>
+      <div class="form-group"><label class="form-label">Provincia</label><input class="form-control" id="cl-provincia" placeholder="MI" maxlength="2" style="text-transform:uppercase"></div>
+      <div class="form-group"><label class="form-label">CAP</label><input class="form-control" id="cl-cap" placeholder="20100" maxlength="5"></div>
+    </div>
+    <div class="section-divider">Documento d'identità</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Tipo documento</label>
+        <select class="form-control" id="cl-doc-tipo">
+          <option value="">— Seleziona —</option>
+          <option>Carta d'identità</option>
+          <option>Passaporto</option>
+          <option>Patente</option>
+          <option>Permesso di soggiorno</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Numero documento</label><input class="form-control" id="cl-doc-num" placeholder="AB1234567"></div>
+    </div>
+    <div class="section-divider">Altro</div>
+    <div class="form-group"><label class="form-label">Canale di prenotazione</label>
+      <select class="form-control" id="cl-canale">
+        <option value="">— Seleziona —</option>
+        <option>Telefono</option>
+        <option>Booking.com</option>
+        <option>Airbnb</option>
+        <option>Di passaggio</option>
+        <option>Sito web</option>
+        <option>Email</option>
+        <option>WhatsApp</option>
+        <option>Agenzia</option>
+        <option>Passaparola</option>
+        <option>Altro</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Note</label>
+      <textarea class="form-control" id="cl-note" rows="3" placeholder="Preferenze, allergie, note particolari..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-cliente')">Annulla</button>
+      <button class="btn btn-primary" onclick="salvaCliente()">Salva cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRENOTAZIONE -->
+<div class="modal-overlay" id="modal-prenotazione">
+  <div class="modal modal-wide">
+    <div class="modal-title" id="modal-pren-title">Nuova prenotazione</div>
+    <div class="section-divider">Ospite</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Cognome *</label><input class="form-control" id="p-cognome" placeholder="Cognome" oninput="suggerisciCliente()"></div>
+      <div class="form-group"><label class="form-label">Nome *</label><input class="form-control" id="p-nome" placeholder="Nome" oninput="suggerisciCliente()"></div>
+    </div>
+    <div id="p-suggerimenti" style="margin-bottom:8px;display:none"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Telefono</label><input class="form-control" id="p-telefono" placeholder="+39 000 0000000" type="tel"></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-control" id="p-email" placeholder="email@esempio.it" type="email"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Canale prenotazione</label>
+        <select class="form-control" id="p-canale">
+          <option value="">— Seleziona —</option>
+          <option>Telefono</option><option>Booking.com</option><option>Airbnb</option>
+          <option>Di passaggio</option><option>Sito web</option><option>Email</option>
+          <option>WhatsApp</option><option>Agenzia</option><option>Passaparola</option><option>Altro</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Camera *</label>
+        <select class="form-control" id="p-camera"></select>
+      </div>
+    </div>
+    <div class="section-divider">Date e prezzo</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Check-in *</label><input class="form-control" id="p-checkin" type="date"></div>
+      <div class="form-group"><label class="form-label">Check-out *</label><input class="form-control" id="p-checkout" type="date"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Notti</label><input class="form-control" id="p-notti" type="number" min="1" readonly></div>
+      <div class="form-group"><label class="form-label">N° persone</label><input class="form-control" id="p-ospiti" type="number" min="1" placeholder="1"></div>
+      <div class="form-group"><label class="form-label">Prezzo totale (€)</label><input class="form-control" id="p-prezzo" type="number" min="0" step="0.01" placeholder="0.00"></div>
+    </div>
+    <div class="modal-actions" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <button class="btn btn-outline btn-sm" onclick="toggleOspitiPren()" id="btn-toggle-ospiti">
+        👥 Aggiungi dati ospiti aggiuntivi (opzionale)
+      </button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" onclick="closeModal('modal-prenotazione')">Annulla</button>
+        <button class="btn btn-primary" onclick="salvaPrenotazione()">Salva prenotazione</button>
+      </div>
+    </div>
+    <!-- Sezione ospiti aggiuntivi (collassata di default) -->
+    <div id="pren-ospiti-section" style="display:none;margin-top:16px">
+      <div class="section-divider">👥 Ospiti aggiuntivi — dati per Alloggiati Web</div>
+      <div style="font-size:13px;color:var(--text);margin-bottom:12px;padding:10px 12px;background:var(--surface2);border-radius:6px;line-height:1.6">
+        Puoi inserire subito i dati o completarli al check-in.<br>
+        <span style="color:var(--accent)">• <strong>Intestatario</strong></span> (Tipo 18 Alloggiati Web) = il prenotante, già presente sopra.<br>
+        <span style="color:var(--accent2)">• <strong>Accompagnatori</strong></span> (Tipo 20) = gli altri ospiti da aggiungere qui sotto.
+      </div>
+      <div id="pren-ospiti-lista"></div>
+      <button class="btn btn-outline btn-sm" onclick="aggiungiOspitePren()" style="margin-top:4px">+ Aggiungi ospite</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CHECK-IN -->
+<div class="modal-overlay" id="modal-checkin">
+  <div class="modal modal-wide" style="max-width:680px">
+    <div class="modal-title">✅ Check-in ospite</div>
+    <div id="ci-riepilogo" style="background:var(--surface2);border-radius:8px;padding:14px;margin-bottom:16px;font-size:14px"></div>
+
+    <div class="section-divider">Dati arrivo</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Ora arrivo</label><input class="form-control" id="ci-ora" type="time"></div>
+      <div class="form-group"><label class="form-label">N° ospiti totali</label><input class="form-control" id="ci-ospiti" type="number" min="1" placeholder="1" oninput="sincronizzaNumeroOspiti()"></div>
+    </div>
+
+    <div class="section-divider">👥 Anagrafica ospiti — obbligatorio per Alloggiati Web</div>
+    <div style="font-size:13px;color:var(--text);margin-bottom:14px;padding:12px 14px;background:var(--surface2);border-radius:8px;line-height:1.6">
+      Inserire i dati di <strong>ogni persona</strong> che soggiorna nella camera, come indicati sul documento d'identità.<br>
+      <span style="color:var(--accent)">• <strong>Intestatario</strong></span> = il prenotante che ha fatto la prenotazione → <em>Tipo 18</em> su Alloggiati Web<br>
+      <span style="color:var(--accent2)">• <strong>Accompagnatore</strong></span> = ogni altra persona presente → <em>Tipo 20</em> su Alloggiati Web
+    </div>
+    <div id="ci-ospiti-lista"></div>
+    <button class="btn btn-outline btn-sm" onclick="aggiungiOspiteCI()" id="btn-add-ospite-ci" style="margin-bottom:16px">+ Aggiungi ospite</button>
+
+    <div class="form-group"><label class="form-label">Note check-in</label>
+      <textarea class="form-control" id="ci-note" rows="2" placeholder="Camera preparata, richieste particolari..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-checkin')">Annulla</button>
+      <button class="btn btn-primary" style="background:#2AA1A0" onclick="confermaCheckin()">✅ Conferma arrivo</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CHECK-OUT -->
+<div class="modal-overlay" id="modal-checkout">
+  <div class="modal">
+    <div class="modal-title">🏁 Check-out ospite</div>
+    <div id="co-riepilogo" style="background:var(--surface2);border-radius:8px;padding:14px;margin-bottom:20px;font-size:14px"></div>
+    <div class="section-divider">Dati partenza</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Ora partenza</label><input class="form-control" id="co-ora" type="time"></div>
+      <div class="form-group"><label class="form-label">Importo saldato (€)</label><input class="form-control" id="co-saldo" type="number" min="0" step="0.01"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Note check-out</label>
+      <textarea class="form-control" id="co-note" rows="2" placeholder="Stato camera, feedback ospite..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-checkout')">Annulla</button>
+      <button class="btn btn-primary" onclick="stampaRicevuta()">🖨️ Stampa ricevuta</button>
+      <button class="btn btn-primary" style="background:#1A6FA8" onclick="confermaCheckout()">🏁 Conferma partenza</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CAMERA -->
+<div class="modal-overlay" id="modal-camera">
+  <div class="modal">
+    <div class="modal-title" id="modal-cam-title">Nuova camera</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Numero / Codice *</label><input class="form-control" id="c-numero" placeholder="es. 101"></div>
+      <div class="form-group"><label class="form-label">Nome</label><input class="form-control" id="c-nome" placeholder="es. Suite Mare"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Tipo</label>
+      <select class="form-control" id="c-tipo">
+        <option>Singola</option><option>Doppia</option><option>Matrimoniale</option>
+        <option>Tripla</option><option>Suite</option><option>Appartamento</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Note</label><textarea class="form-control" id="c-note" rows="2" placeholder="Balcone, vista mare..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-camera')">Annulla</button>
+      <button class="btn btn-primary" onclick="salvaCamera()">Salva</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script>
+function guidaSezione(id, btn) {
+  document.querySelectorAll('.gs').forEach(s => s.style.display = 'none');
+  document.querySelectorAll('.gnav').forEach(b => b.classList.remove('active'));
+  const el = document.getElementById('gs-' + id);
+  if (el) el.style.display = 'block';
+  if (btn) btn.classList.add('active');
+  const gc = document.getElementById('guida-content');
+  if (gc) gc.scrollTop = 0;
+}
+function scaricaGuidaPDF() {
+  window.open('#','_blank');
+}
+</script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  CONFIGURAZIONE FIREBASE — da sostituire per ogni cliente   ║
+// ║  Ottenibile da: console.firebase.google.com                 ║
+// ╚══════════════════════════════════════════════════════════════╝
+const firebaseConfig = {
+  apiKey:"YOUR_API_KEY",
+  authDomain:"YOUR-PROJECT.firebaseapp.com",
+  projectId:"YOUR-PROJECT-ID",
+  storageBucket:"YOUR-PROJECT.appspot.com",
+  messagingSenderId:"YOUR_SENDER_ID",
+  appId:"YOUR_APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// ===== STATO =====
+let currentUser=null, currentUserData=null;
+let allPrenotazioni=[], allCamere=[], allUtenti=[], allClienti=[];
+let allMovimenti=[], allCategorie=[];
+let editingPrenId=null, editingCamId=null, editingCliKey=null, editingMovId=null;
+let calAnno=new Date().getFullYear();
+let unsubPren=null, unsubCamere=null, unsubUtenti=null, unsubClienti=null, unsubMovimenti=null, unsubCategorie=null;
+
+// ===== AUTH =====
+auth.onAuthStateChanged(async user=>{
+  if(!user){showAuth();return}
+  currentUser=user;
+  const snap=await db.collection('utenti').doc(user.uid).get();
+  if(!snap.exists){auth.signOut();showAuth();return}
+  currentUserData=snap.data();
+  if(currentUserData.stato!=='approvato'){showAuth();document.getElementById('pending-banner').style.display='block';return}
+  showApp();
+});
+function showAuth(){document.getElementById('auth-screen').style.display='flex';document.getElementById('app').style.display='none'}
+function showApp(){
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('pending-banner').style.display='none';
+  document.getElementById('user-email-label').textContent=currentUser.email;
+  const ruolo=currentUserData.ruolo||'visual';
+  const labels={'admin':'Admin','proprietario':'Proprietario','visual':'Visual'};
+  document.getElementById('user-role-badge').textContent=labels[ruolo]||ruolo;
+  if(ruolo==='visual'){
+    // Visual: solo dashboard, calendario, prenotazioni (sola lettura), guida
+    document.querySelectorAll('.no-visual').forEach(el=>el.style.display='none');
+    document.querySelectorAll('.admin-only').forEach(el=>el.style.display='none');
+    document.querySelectorAll('.proprietario-only').forEach(el=>el.style.display='none');
+  } else if(ruolo==='proprietario'){
+    // Proprietario: tutto tranne impostazioni utenti
+    document.querySelectorAll('.admin-only').forEach(el=>el.style.display='none');
+    document.querySelectorAll('.proprietario-only').forEach(el=>el.style.display='');
+  }
+  // Admin: vede tutto, nessun filtro
+  startListeners();
+  aggiornaCalendario();
+  initPrintDate();
+}
+async function doLogin(){
+  const email=document.getElementById('auth-email').value.trim();
+  const pw=document.getElementById('auth-password').value;
+  const errEl=document.getElementById('auth-error');
+  const btn=document.getElementById('login-btn-text');
+  errEl.style.display='none'; btn.innerHTML='<span class="spinner"></span>';
+  try{await auth.signInWithEmailAndPassword(email,pw)}
+  catch(e){errEl.textContent='Email o password non corretti.';errEl.style.display='block';btn.textContent='Accedi'}
+}
+function doLogout(){auth.signOut()}
+
+// ===== LISTENERS =====
+function startListeners(){
+  if(unsubPren)unsubPren(); if(unsubCamere)unsubCamere();
+  if(unsubUtenti)unsubUtenti(); if(unsubClienti)unsubClienti();
+  unsubPren=db.collection('prenotazioni').orderBy('checkin','asc').onSnapshot(snap=>{
+    allPrenotazioni=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderPrenotazioni();renderDashboard();aggiornaCalendario();renderClienti();renderStampa();
+    aggiornaAlertQuestura();
+  });
+  unsubCamere=db.collection('camere').orderBy('numero','asc').onSnapshot(snap=>{
+    allCamere=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderCamere();renderDashboard();aggiornaCalendario();populateCameraSelect();
+  });
+  unsubClienti=db.collection('clienti').orderBy('cognome','asc').onSnapshot(snap=>{
+    allClienti=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderClienti();
+  });
+  if(currentUserData.ruolo==='admin'){
+    unsubUtenti=db.collection('utenti').onSnapshot(snap=>{
+      allUtenti=snap.docs.map(d=>({id:d.id,...d.data()}));
+      renderUtenti();
+    });
+  }
+  // Contabilità — movimenti e categorie
+  unsubMovimenti=db.collection('contabilita').orderBy('data','desc').onSnapshot(snap=>{
+    allMovimenti=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderContabilita();
+    aggiornaDashboardContabilita();
+  });
+  unsubCategorie=db.collection('categorie_contabilita').orderBy('nome','asc').onSnapshot(snap=>{
+    allCategorie=snap.docs.map(d=>({id:d.id,...d.data()}));
+    popolaFiltroCategorie();
+    aggiornaCategorieModal();
+    renderTabellaCategorie();
+  });
+  // Categorie default se db vuoto
+  setTimeout(()=>{ if(!allCategorie.length) inserisciCategorieDefault(); }, 2500);
+}
+
+// ===== NAV =====
+function navTo(page,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(page==='calendario')aggiornaCalendario();
+  if(page==='stampa')renderStampa();
+  if(page==='questura'){initQuestura();}
+  if(page==='contabilita'){renderContabilita();}
+}
+
+// ===== DASHBOARD =====
+function renderDashboard(){
+  const oggi=toDateStr(new Date());
+  const ci=allPrenotazioni.filter(p=>p.checkin===oggi).length;
+  const co=allPrenotazioni.filter(p=>p.checkout===oggi).length;
+  document.getElementById('stat-oggi').textContent=`${ci} / ${co}`;
+  const occ=camerOccupateOggi().size;
+  document.getElementById('stat-occ').textContent=occ;
+  document.getElementById('stat-occ-sub').textContent=`su ${allCamere.length} disponibili`;
+  document.getElementById('stat-tot').textContent=allPrenotazioni.length;
+  const mese=new Date().getMonth(), anno=new Date().getFullYear();
+  const incasso=allPrenotazioni.filter(p=>{const d=new Date(p.checkin);return d.getMonth()===mese&&d.getFullYear()===anno})
+    .reduce((s,p)=>s+(parseFloat(p.prezzo)||0),0);
+  document.getElementById('stat-mese').textContent='€'+incasso.toFixed(0);
+  const tb=document.getElementById('tb-arrivi');
+  const prossimi=allPrenotazioni.filter(p=>p.checkin>=oggi).slice(0,8);
+  if(!prossimi.length){tb.innerHTML='<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">🌙</div><p>Nessun arrivo imminente</p></div></td></tr>';return}
+  tb.innerHTML=prossimi.map(p=>{
+    const s=statoPrenotazione(p);
+    return`<tr><td><strong>${p.nome} ${p.cognome}</strong></td><td>${nomeCameraById(p.cameraId)}</td>
+    <td>${formatDate(p.checkin)}</td><td>${formatDate(p.checkout)}</td>
+    <td><span class="badge ${s.cls}">${s.label}</span></td></tr>`;
+  }).join('');
+}
+function camerOccupateOggi(){
+  const oggi=toDateStr(new Date()); const occ=new Set();
+  allPrenotazioni.forEach(p=>{if(p.checkin<=oggi&&p.checkout>oggi)occ.add(p.cameraId)});
+  return occ;
+}
+function statoPrenotazione(p){
+  const oggi=toDateStr(new Date());
+  if(p.checkoutConfermato)return{label:'Check-out ✓',cls:'badge-out'};
+  if(p.checkinConfermato)return{label:'In soggiorno ✓',cls:'badge-stay'};
+  if(p.checkin===oggi)return{label:'Arrivo oggi',cls:'badge-in'};
+  if(p.checkout===oggi)return{label:'Partenza oggi',cls:'badge-out'};
+  if(p.checkin<oggi&&p.checkout>oggi)return{label:'In soggiorno',cls:'badge-stay'};
+  if(p.checkin>oggi)return{label:'Futura',cls:'badge-free'};
+  return{label:'Conclusa',cls:'badge-out'};
+}
+
+// ===== PRENOTAZIONI =====
+function renderPrenotazioni(){
+  const tb=document.getElementById('tb-prenotazioni');
+  if(!allPrenotazioni.length){tb.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">📋</div><p>Nessuna prenotazione</p></div></td></tr>';return}
+  const sorted=[...allPrenotazioni].sort((a,b)=>b.checkin.localeCompare(a.checkin));
+  const canEdit=currentUserData?.ruolo==='admin'||currentUserData?.ruolo==='proprietario';
+  const oggi=toDateStr(new Date());
+  tb.innerHTML=sorted.map(p=>{
+    const n=calcolaNotti(p.checkin,p.checkout); const s=statoPrenotazione(p);
+    // Bottoni check-in / check-out contestuali
+    let btnCI='', btnCO='';
+    const puoCheckin=!p.checkinConfermato&&!p.checkoutConfermato&&p.checkin<=oggi&&p.checkout>oggi;
+    const puoCheckout=p.checkinConfermato&&!p.checkoutConfermato;
+    if(puoCheckin) btnCI=`<button class="btn btn-sm" style="background:#2AA1A0;color:#fff" onclick="openModalCheckin('${p.id}')">✅ Check-in</button>`;
+    if(puoCheckout) btnCO=`<button class="btn btn-sm" style="background:#1A6FA8;color:#fff" onclick="openModalCheckout('${p.id}')">🏁 Check-out</button>`;
+    return`<tr>
+      <td><strong>${p.cognome||''} ${p.nome||''}</strong>${p.telefono?`<br><small style="color:var(--text-muted)">${p.telefono}</small>`:''}</td>
+      <td>${nomeCameraById(p.cameraId)}</td>
+      <td>${formatDate(p.checkin)}${p.checkinConfermato?`<br><small style="color:var(--accent2)">✓ ${p.oraCheckin||''}</small>`:''}</td>
+      <td>${formatDate(p.checkout)}${p.checkoutConfermato?`<br><small style="color:var(--text-muted)">✓ ${p.oraCheckout||''}</small>`:''}</td>
+      <td>${n}</td><td>${p.nOspiti||1} pers.</td><td>€${parseFloat(p.prezzo||0).toFixed(2)}</td>
+      <td>${p.canale||'—'}</td>
+      <td><span class="badge ${s.cls}">${s.label}</span></td>
+      <td class="no-print" style="white-space:nowrap">${btnCI}${btnCO}</td>
+      <td class="no-print">${canEdit?`<button class="btn btn-sm btn-outline" onclick="editPrenotazione('${p.id}')">✏️</button>
+        <button class="btn btn-sm btn-danger" onclick="eliminaPrenotazione('${p.id}')">🗑️</button>`:''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function openModalPrenotazione(id){
+  editingPrenId=id||null;
+  document.getElementById('modal-pren-title').textContent=id?'Modifica prenotazione':'Nuova prenotazione';
+  populateCameraSelect();
+  if(id){
+    const p=allPrenotazioni.find(x=>x.id===id);
+    document.getElementById('p-nome').value=p.nome||'';
+    document.getElementById('p-cognome').value=p.cognome||'';
+    document.getElementById('p-telefono').value=p.telefono||'';
+    document.getElementById('p-email').value=p.email||'';
+    document.getElementById('p-canale').value=p.canale||'';
+    document.getElementById('p-camera').value=p.cameraId||'';
+    document.getElementById('p-checkin').value=p.checkin||'';
+    document.getElementById('p-checkout').value=p.checkout||'';
+    document.getElementById('p-prezzo').value=p.prezzo||'';
+    document.getElementById('p-ospiti').value=p.nOspiti||'';
+    aggNotti();
+  } else {
+    ['p-nome','p-cognome','p-telefono','p-email','p-prezzo'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('p-checkin').value='';
+    document.getElementById('p-checkout').value='';
+    document.getElementById('p-notti').value='';
+    document.getElementById('p-ospiti').value='';
+    document.getElementById('p-canale').value='';
+    document.getElementById('p-suggerimenti').style.display='none';
+    ospitiBozzaPren=[];
+    document.getElementById('pren-ospiti-section').style.display='none';
+    document.getElementById('btn-toggle-ospiti').textContent='👥 Aggiungi dati ospiti aggiuntivi (opzionale)';
+  }
+  document.getElementById('modal-prenotazione').classList.add('open');
+  document.getElementById('p-checkin').oninput=aggNotti;
+  document.getElementById('p-checkout').oninput=aggNotti;
+}
+function aggNotti(){
+  const ci=document.getElementById('p-checkin').value;
+  const co=document.getElementById('p-checkout').value;
+  if(ci&&co){const n=calcolaNotti(ci,co);document.getElementById('p-notti').value=n>0?n:''}
+}
+function editPrenotazione(id){openModalPrenotazione(id)}
+
+// Suggerisce clienti esistenti durante la digitazione
+function suggerisciCliente(){
+  const nome=document.getElementById('p-nome').value.toLowerCase();
+  const cogn=document.getElementById('p-cognome').value.toLowerCase();
+  if(nome.length<2&&cogn.length<2){document.getElementById('p-suggerimenti').style.display='none';return}
+  const matches=getClientiMerged().filter(c=>
+    (c.nome||'').toLowerCase().includes(nome)||(c.cognome||'').toLowerCase().includes(cogn)
+  ).slice(0,4);
+  if(!matches.length){document.getElementById('p-suggerimenti').style.display='none';return}
+  const div=document.getElementById('p-suggerimenti');
+  div.style.display='block';
+  div.innerHTML=`<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">Clienti esistenti:</div>`+
+    matches.map(c=>`<button type="button" class="btn btn-outline btn-sm" style="margin:2px" onclick="riempiDaCliente('${encodeURIComponent(chiaveCliente(c.nome,c.cognome))}')">
+      ${c.cognome} ${c.nome}${c.telefono?' · '+c.telefono:''}</button>`).join('');
+}
+function riempiDaCliente(kEnc){
+  const k=decodeURIComponent(kEnc);
+  const c=getClientiMerged().find(x=>chiaveCliente(x.nome||'',x.cognome||'')===k);
+  if(!c)return;
+  document.getElementById('p-nome').value=c.nome||'';
+  document.getElementById('p-cognome').value=c.cognome||'';
+  document.getElementById('p-telefono').value=c.telefono||'';
+  document.getElementById('p-email').value=c.email||'';
+  document.getElementById('p-canale').value=c.canale||'';
+  document.getElementById('p-suggerimenti').style.display='none';
+}
+
+async function salvaPrenotazione(){
+  const nome=document.getElementById('p-nome').value.trim();
+  const cognome=document.getElementById('p-cognome').value.trim();
+  const cameraId=document.getElementById('p-camera').value;
+  const checkin=document.getElementById('p-checkin').value;
+  const checkout=document.getElementById('p-checkout').value;
+  const prezzo=document.getElementById('p-prezzo').value;
+  if(!nome||!cognome||!cameraId||!checkin||!checkout){showToast('Compila i campi obbligatori','error');return}
+  if(checkin>=checkout){showToast('Il check-out deve essere dopo il check-in','error');return}
+  // Controllo doppia prenotazione: prima in locale (veloce), poi su Firestore (sicuro)
+  const conflittoLocale=allPrenotazioni.find(p=>{
+    if(p.cameraId!==cameraId)return false;
+    if(editingPrenId&&p.id===editingPrenId)return false;
+    return checkin<p.checkout&&checkout>p.checkin;
+  });
+  if(conflittoLocale){showToast(`⚠️ Camera già occupata: ${conflittoLocale.cognome||''} ${conflittoLocale.nome||''} (${formatDate(conflittoLocale.checkin)} → ${formatDate(conflittoLocale.checkout)})`,'error');return}
+  // Verifica server-side: query Firestore per sicurezza
+  try{
+    const snap=await db.collection('prenotazioni')
+      .where('cameraId','==',cameraId)
+      .where('checkin','<',checkout)
+      .where('checkout','>',checkin)
+      .get();
+    const conflitoDb=snap.docs.find(d=>d.id!==editingPrenId);
+    if(conflitoDb){
+      const c=conflitoDb.data();
+      showToast(`⚠️ Camera già prenotata su DB: ${c.cognome||''} ${c.nome||''} (${formatDate(c.checkin)} → ${formatDate(c.checkout)})`,'error');
+      return;
+    }
+  }catch(e){/* se query fallisce procedi comunque */}
+  const data={
+    nome,cognome,
+    telefono:document.getElementById('p-telefono').value.trim(),
+    email:document.getElementById('p-email').value.trim(),
+    canale:document.getElementById('p-canale').value,
+    cameraId,checkin,checkout,
+    nOspiti:parseInt(document.getElementById('p-ospiti').value)||1,
+    prezzo:parseFloat(prezzo)||0,
+    ospiti: raccogliOspitiPren() || [],
+    aggiornata:firebase.firestore.FieldValue.serverTimestamp()
+  };
+  try{
+    if(editingPrenId){await db.collection('prenotazioni').doc(editingPrenId).update(data)}
+    else{data.creata=firebase.firestore.FieldValue.serverTimestamp();data.creataDA=currentUser.uid;await db.collection('prenotazioni').add(data)}
+    // Aggiorna/crea cliente automaticamente
+    await syncClienteDaPrenotazione(data);
+    closeModal('modal-prenotazione');showToast('Prenotazione salvata ✓','success');
+  }catch(e){showToast('Errore: '+e.message,'error')}
+}
+async function syncClienteDaPrenotazione(p){
+  const k=chiaveCliente(p.nome,p.cognome);
+  const existing=allClienti.find(c=>chiaveCliente(c.nome||'',c.cognome||'')===k);
+  const aggiornamenti={nome:p.nome,cognome:p.cognome};
+  if(p.telefono)aggiornamenti.telefono=p.telefono;
+  if(p.email)aggiornamenti.email=p.email;
+  if(p.canale)aggiornamenti.canale=p.canale;
+  if(existing){
+    await db.collection('clienti').doc(existing.id).update({...aggiornamenti,aggiornato:firebase.firestore.FieldValue.serverTimestamp()});
+  } else {
+    await db.collection('clienti').add({...aggiornamenti,note:'',creato:firebase.firestore.FieldValue.serverTimestamp()});
+  }
+}
+async function eliminaPrenotazione(id){
+  if(!confirm('Eliminare questa prenotazione?'))return;
+  try{await db.collection('prenotazioni').doc(id).delete();showToast('Prenotazione eliminata','success')}
+  catch(e){showToast('Errore: '+e.message,'error')}
+}
+function populateCameraSelect(){
+  const sel=document.getElementById('p-camera');
+  sel.innerHTML='<option value="">Seleziona camera...</option>'+
+    allCamere.map(c=>`<option value="${c.id}">${c.numero}${c.nome?' - '+c.nome:''} (${c.tipo||''})</option>`).join('');
+}
+
+// ===== CLIENTI =====
+function chiaveCliente(nome,cognome){return`${(nome||'').trim().toLowerCase()}|${(cognome||'').trim().toLowerCase()}`}
+
+function getClientiMerged(){
+  const map={};
+  allClienti.forEach(c=>{
+    const k=chiaveCliente(c.nome||'',c.cognome||'');
+    map[k]={...c,_fromDb:true};
+  });
+  allPrenotazioni.forEach(p=>{
+    const k=chiaveCliente(p.nome||'',p.cognome||'');
+    if(!map[k])map[k]={nome:p.nome,cognome:p.cognome,telefono:p.telefono||'',note:'',_fromDb:false};
+  });
+  return Object.values(map).sort((a,b)=>(a.cognome||'').localeCompare(b.cognome||''));
+}
+
+function renderClienti(){
+  const tb=document.getElementById('tb-clienti');
+  if(!tb)return;
+  const q=(document.getElementById('clienti-search')?.value||'').toLowerCase();
+  let lista=getClientiMerged();
+  if(q)lista=lista.filter(c=>(c.nome||'').toLowerCase().includes(q)||(c.cognome||'').toLowerCase().includes(q)||(c.telefono||'').toLowerCase().includes(q));
+  if(!lista.length){tb.innerHTML='<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">👥</div><p>Nessun cliente</p></div></td></tr>';return}
+  tb.innerHTML=lista.map(c=>{
+    const k=chiaveCliente(c.nome||'',c.cognome||'');
+    const sogg=allPrenotazioni.filter(p=>chiaveCliente(p.nome||'',p.cognome||'')===k);
+    const tot=sogg.reduce((s,p)=>s+(parseFloat(p.prezzo)||0),0);
+    const ultima=sogg.map(p=>p.checkout).filter(Boolean).sort().reverse()[0];
+    return`<tr>
+      <td><strong>${c.cognome||''} ${c.nome||''}</strong></td>
+      <td>${c.telefono||'—'}</td>
+      <td>${c.email||'—'}</td>
+      <td>${c.canale||'—'}</td>
+      <td style="text-align:center">${sogg.length}</td>
+      <td>€${tot.toFixed(2)}</td>
+      <td>${ultima?formatDate(ultima):'—'}</td>
+      <td class="no-print" style="display:flex;gap:6px;padding:10px 16px">
+        <button class="btn btn-sm btn-outline" onclick="apriStorico('${encodeURIComponent(k)}')">📋</button>
+        <button class="btn btn-sm btn-outline" onclick="editCliente('${encodeURIComponent(k)}')">✏️</button>
+        <button class="btn btn-sm btn-danger" onclick="eliminaCliente('${encodeURIComponent(k)}')">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function apriStorico(kEnc){
+  const k=decodeURIComponent(kEnc);
+  const c=getClientiMerged().find(x=>chiaveCliente(x.nome||'',x.cognome||'')===k);
+  if(!c)return;
+  const sogg=allPrenotazioni.filter(p=>chiaveCliente(p.nome||'',p.cognome||'')===k).sort((a,b)=>b.checkin.localeCompare(a.checkin));
+  const tot=sogg.reduce((s,p)=>s+(parseFloat(p.prezzo)||0),0);
+  document.getElementById('storico-titolo').textContent=`${c.cognome||''} ${c.nome||''}`;
+  // Salvo la chiave per la stampa
+  document.getElementById('modal-storico').dataset.key=kEnc;
+  let html=`<div class="cliente-card-print" id="scheda-print">
+    <h3>🐓 🏨 Gestionale – Scheda cliente</h3>
+    <div class="cliente-info-grid">
+      <div><div class="ci-label">Nominativo</div><div class="ci-val">${c.cognome||''} ${c.nome||''}</div></div>
+      <div><div class="ci-label">Telefono</div><div class="ci-val">${c.telefono||'—'}</div></div>
+      <div><div class="ci-label">Email</div><div class="ci-val">${c.email||'—'}</div></div>
+      <div><div class="ci-label">Canale</div><div class="ci-val">${c.canale||'—'}</div></div>
+      ${c.via?`<div><div class="ci-label">Indirizzo</div><div class="ci-val">${c.via}${c.citta?', '+c.citta:''}${c.provincia?' ('+c.provincia+')':''}</div></div>`:''}
+      ${c.docTipo?`<div><div class="ci-label">Documento</div><div class="ci-val">${c.docTipo}: ${c.docNum||'—'}</div></div>`:''}
+    </div>
+    ${c.note?`<div style="padding:10px 14px;background:var(--surface2);border-radius:6px;font-size:13px;margin-top:4px">📝 ${c.note}</div>`:''}
+  </div>`;
+  if(sogg.length){
+    html+=`<div style="font-weight:600;font-size:14px;margin-bottom:10px">Soggiorni (${sogg.length}) — Totale: <span style="color:var(--accent)">€${tot.toFixed(2)}</span></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Camera</th><th>Check-in</th><th>Check-out</th><th>Notti</th><th>Prezzo</th><th>Canale</th></tr></thead>
+      <tbody>${sogg.map(p=>`<tr>
+        <td>${nomeCameraById(p.cameraId)}</td>
+        <td>${formatDate(p.checkin)}</td><td>${formatDate(p.checkout)}</td>
+        <td>${calcolaNotti(p.checkin,p.checkout)}</td>
+        <td>€${parseFloat(p.prezzo||0).toFixed(2)}</td>
+        <td>${p.canale||'—'}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  } else {
+    html+=`<p style="color:var(--text-muted);text-align:center;padding:20px">Nessun soggiorno registrato</p>`;
+  }
+  document.getElementById('storico-body').innerHTML=html;
+  document.getElementById('modal-storico').classList.add('open');
+}
+
+function stampaScheda(){
+  const content=document.getElementById('scheda-print')?.outerHTML||'';
+  const storicoContent=document.getElementById('storico-body')?.innerHTML||'';
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Scheda cliente</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>body{font-family:'DM Sans',sans-serif;padding:30px;color:#0D2436}
+  h3{font-family:'DM Serif Display',serif;color:#1A6FA8;margin-bottom:12px}
+  .cliente-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;margin-bottom:16px}
+  .ci-label{font-size:11px;color:#6A8DA8;text-transform:uppercase}
+  .ci-val{font-weight:600;font-size:14px}
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  th{background:#E3F0F8;padding:8px 12px;text-align:left;font-size:12px}
+  td{padding:8px 12px;border-top:1px solid #C8DFF0;font-size:13px}
+  </style></head><body>${storicoContent}</body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(),400);
+}
+
+function openModalCliente(kEnc){
+  editingCliKey=kEnc||null;
+  document.getElementById('modal-cli-title').textContent=kEnc?'Modifica cliente':'Nuovo cliente';
+  const fields=['cl-nome','cl-cognome','cl-telefono','cl-email','cl-via','cl-citta','cl-provincia','cl-cap','cl-doc-num','cl-note'];
+  fields.forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cl-doc-tipo').value='';
+  document.getElementById('cl-canale').value='';
+  if(kEnc){
+    const k=decodeURIComponent(kEnc);
+    const c=getClientiMerged().find(x=>chiaveCliente(x.nome||'',x.cognome||'')===k);
+    if(c){
+      document.getElementById('cl-nome').value=c.nome||'';
+      document.getElementById('cl-cognome').value=c.cognome||'';
+      document.getElementById('cl-telefono').value=c.telefono||'';
+      document.getElementById('cl-email').value=c.email||'';
+      document.getElementById('cl-via').value=c.via||'';
+      document.getElementById('cl-citta').value=c.citta||'';
+      document.getElementById('cl-provincia').value=c.provincia||'';
+      document.getElementById('cl-cap').value=c.cap||'';
+      document.getElementById('cl-doc-tipo').value=c.docTipo||'';
+      document.getElementById('cl-doc-num').value=c.docNum||'';
+      document.getElementById('cl-canale').value=c.canale||'';
+      document.getElementById('cl-note').value=c.note||'';
+    }
+  }
+  document.getElementById('modal-cliente').classList.add('open');
+}
+function editCliente(kEnc){openModalCliente(kEnc)}
+
+async function eliminaCliente(kEnc){
+  const k=decodeURIComponent(kEnc);
+  const c=getClientiMerged().find(x=>chiaveCliente(x.nome||'',x.cognome||'')===k);
+  if(!c)return;
+  const nSogg=allPrenotazioni.filter(p=>chiaveCliente(p.nome||'',p.cognome||'')===k).length;
+  const msg=nSogg>0
+    ? `Eliminare ${c.cognome||''} ${c.nome||''}? Il cliente ha ${nSogg} prenotazione/i registrata/e che rimarranno nel sistema.`
+    : `Eliminare ${c.cognome||''} ${c.nome||''}?`;
+  if(!confirm(msg))return;
+  if(!c._fromDb){showToast('Cliente presente solo nelle prenotazioni: nessun record da eliminare','error');return}
+  try{
+    await db.collection('clienti').doc(c.id).delete();
+    showToast('Cliente eliminato','success');
+  }catch(e){showToast('Errore: '+e.message,'error')}
+}
+
+async function salvaCliente(){
+  const nome=document.getElementById('cl-nome').value.trim();
+  const cognome=document.getElementById('cl-cognome').value.trim();
+  if(!nome||!cognome){showToast('Nome e cognome obbligatori','error');return}
+  const data={
+    nome,cognome,
+    telefono:document.getElementById('cl-telefono').value.trim(),
+    email:document.getElementById('cl-email').value.trim(),
+    via:document.getElementById('cl-via').value.trim(),
+    citta:document.getElementById('cl-citta').value.trim(),
+    provincia:document.getElementById('cl-provincia').value.trim().toUpperCase(),
+    cap:document.getElementById('cl-cap').value.trim(),
+    docTipo:document.getElementById('cl-doc-tipo').value,
+    docNum:document.getElementById('cl-doc-num').value.trim(),
+    canale:document.getElementById('cl-canale').value,
+    note:document.getElementById('cl-note').value.trim(),
+    aggiornato:firebase.firestore.FieldValue.serverTimestamp()
+  };
+  try{
+    const k=chiaveCliente(nome,cognome);
+    const existing=allClienti.find(c=>chiaveCliente(c.nome||'',c.cognome||'')===k);
+    if(existing){await db.collection('clienti').doc(existing.id).update(data)}
+    else{data.creato=firebase.firestore.FieldValue.serverTimestamp();await db.collection('clienti').add(data)}
+    closeModal('modal-cliente');showToast('Cliente salvato ✓','success');
+  }catch(e){showToast('Errore: '+e.message,'error')}
+}
+
+// ===== CHECK-IN / CHECK-OUT =====
+let checkinPrenId=null, checkoutPrenId=null;
+let ospitiBozzaCI=[];   // ospiti nel modal check-in
+let ospitiBozzaPren=[]; // ospiti nel modal prenotazione
+
+// ── Helper card ospite ────────────────────────────────────────────────────────
+function htmlCardOspite(idx, dati={}, isCapo=false, contenitore='ci'){
+  const d = dati;
+  // Etichette chiare con ruolo esplicito per Alloggiati Web
+  const etichetta = isCapo
+    ? '👤 Intestatario prenotazione'
+    : `👥 Accompagnatore ${idx}`;
+  const ruoloAlloggiati = isCapo
+    ? '<span style="font-size:10px;font-weight:400;opacity:.85">→ Alloggiati Web: <strong>Tipo 18</strong> (capo famiglia)</span>'
+    : '<span style="font-size:10px;font-weight:400;opacity:.85">→ Alloggiati Web: <strong>Tipo 20</strong> (familiare / membro gruppo)</span>';
+  const coloreHeader = isCapo ? 'var(--accent)' : 'var(--accent2)';
+  const rimovibile = !isCapo;
+
+  return `<div class="ospite-card" id="${contenitore}-ospite-${idx}"
+    style="border:1.5px solid ${isCapo ? 'var(--accent)' : 'var(--accent2)'};border-radius:10px;margin-bottom:12px;overflow:hidden">
+    <!-- Header card -->
+    <div style="background:${coloreHeader};color:#fff;padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:13px;font-weight:700">${etichetta}</div>
+        <div style="margin-top:2px">${ruoloAlloggiati}</div>
+      </div>
+      ${rimovibile ? `<button class="btn btn-sm" style="background:rgba(255,255,255,.2);color:#fff;padding:3px 10px;font-size:12px;border:1px solid rgba(255,255,255,.4)"
+        onclick="rimuoviOspite(${idx},'${contenitore}')">✕ Rimuovi</button>` : ''}
+    </div>
+    <!-- Campi -->
+    <div style="padding:14px;background:var(--surface)">
+      ${isCapo ? `<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;padding:8px 10px;background:var(--accent-light);border-radius:6px">
+        ℹ️ Il prenotante è sempre l'intestatario della schedina. Documento obbligatorio.
+      </div>` : `<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;padding:8px 10px;background:var(--accent2-light);border-radius:6px">
+        ℹ️ Accompagnatore ${idx}: inserire i dati dal documento d'identità.
+      </div>`}
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Cognome${isCapo?' *':''}</label>
+          <input class="form-control" id="${contenitore}-o${idx}-cognome" value="${d.cognome||''}" placeholder="Cognome"></div>
+        <div class="form-group"><label class="form-label">Nome${isCapo?' *':''}</label>
+          <input class="form-control" id="${contenitore}-o${idx}-nome" value="${d.nome||''}" placeholder="Nome"></div>
+      </div>
+      <div class="form-row3">
+        <div class="form-group"><label class="form-label">Sesso</label>
+          <select class="form-control" id="${contenitore}-o${idx}-sesso">
+            <option value="">—</option>
+            <option value="M" ${d.sesso==='M'?'selected':''}>Maschile</option>
+            <option value="F" ${d.sesso==='F'?'selected':''}>Femminile</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Data di nascita</label>
+          <input class="form-control" id="${contenitore}-o${idx}-nascita" type="date" value="${d.dataNascita||''}"></div>
+        <div class="form-group"><label class="form-label">Cittadinanza</label>
+          <select class="form-control" id="${contenitore}-o${idx}-cittadinanza">
+            <option value="Italiana" ${(!d.cittadinanza||d.cittadinanza==='Italiana')?'selected':''}>Italiana</option>
+            <option value="Straniera" ${d.cittadinanza==='Straniera'?'selected':''}>Straniera</option>
+          </select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Tipo documento${isCapo?' *':''}</label>
+          <select class="form-control" id="${contenitore}-o${idx}-docTipo">
+            <option value="">— Seleziona —</option>
+            <option ${d.docTipo==="Carta d'identità"?'selected':''}>Carta d'identità</option>
+            <option ${d.docTipo==='Passaporto'?'selected':''}>Passaporto</option>
+            <option ${d.docTipo==='Patente'?'selected':''}>Patente</option>
+            <option ${d.docTipo==='Permesso di soggiorno'?'selected':''}>Permesso di soggiorno</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Numero documento${isCapo?' *':''}</label>
+          <input class="form-control" id="${contenitore}-o${idx}-docNum" value="${d.docNum||''}" placeholder="AB1234567"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function leggiOspiteForm(idx, contenitore='ci'){
+  const get = id => document.getElementById(`${contenitore}-o${idx}-${id}`)?.value||'';
+  return {
+    cognome: get('cognome'), nome: get('nome'), sesso: get('sesso'),
+    dataNascita: get('nascita'), cittadinanza: get('cittadinanza'),
+    docTipo: get('docTipo'), docNum: get('docNum'),
+  };
+}
+
+// ── PRENOTAZIONE: sezione ospiti opzionale ───────────────────────────────────
+function toggleOspitiPren(){
+  const sec = document.getElementById('pren-ospiti-section');
+  const btn = document.getElementById('btn-toggle-ospiti');
+  if(sec.style.display==='none'){
+    sec.style.display='block';
+    btn.textContent='👥 Nascondi ospiti aggiuntivi';
+    renderOspitiPren();
+  } else {
+    sec.style.display='none';
+    btn.textContent='👥 Aggiungi dati ospiti aggiuntivi (opzionale)';
+  }
+}
+function renderOspitiPren(){
+  const lista = document.getElementById('pren-ospiti-lista');
+  if(!lista) return;
+  // Il primo è sempre il prenotante (capo)
+  const capoDati = {
+    cognome: document.getElementById('p-cognome')?.value||'',
+    nome: document.getElementById('p-nome')?.value||'',
+  };
+  let html = htmlCardOspite(0, ospitiBozzaPren[0]||capoDati, true, 'pren');
+  for(let i=1;i<ospitiBozzaPren.length;i++){
+    html += htmlCardOspite(i, ospitiBozzaPren[i], false, 'pren');
+  }
+  lista.innerHTML = html;
+}
+function aggiungiOspitePren(){
+  ospitiBozzaPren.push({});
+  renderOspitiPren();
+}
+function rimuoviOspite(idx, contenitore){
+  if(contenitore==='pren'){ ospitiBozzaPren.splice(idx,1); renderOspitiPren(); }
+  else { ospitiBozzaCI.splice(idx,1); renderOspitiCI(); }
+}
+function raccogliOspitiPren(){
+  if(document.getElementById('pren-ospiti-section').style.display==='none') return null;
+  const lista=[];
+  const n=document.querySelectorAll('[id^="pren-o"][id$="-cognome"]').length;
+  for(let i=0;i<n;i++) lista.push(leggiOspiteForm(i,'pren'));
+  return lista.filter(o=>o.cognome||o.nome);
+}
+
+// ── CHECK-IN: lista ospiti completa obbligatoria ──────────────────────────────
+function renderOspitiCI(){
+  const lista = document.getElementById('ci-ospiti-lista');
+  if(!lista) return;
+  let html='';
+  for(let i=0;i<ospitiBozzaCI.length;i++){
+    html += htmlCardOspite(i, ospitiBozzaCI[i], i===0, 'ci');
+  }
+  lista.innerHTML = html;
+  // Aggiorna bottone aggiungi
+  const nOspiti = parseInt(document.getElementById('ci-ospiti')?.value)||1;
+  document.getElementById('btn-add-ospite-ci').style.display =
+    ospitiBozzaCI.length < nOspiti ? 'inline-flex' : 'none';
+}
+function aggiungiOspiteCI(){
+  ospitiBozzaCI.push({});
+  renderOspitiCI();
+}
+function sincronizzaNumeroOspiti(){
+  const n = parseInt(document.getElementById('ci-ospiti')?.value)||1;
+  // Aggiunge o rimuove schede automaticamente
+  while(ospitiBozzaCI.length < n) ospitiBozzaCI.push({});
+  while(ospitiBozzaCI.length > n && ospitiBozzaCI.length > 1) ospitiBozzaCI.pop();
+  renderOspitiCI();
+}
+
+function openModalCheckin(id){
+  checkinPrenId = id;
+  const p = allPrenotazioni.find(x=>x.id===id);
+  if(!p) return;
+  const c = getClientiMerged().find(x=>chiaveCliente(x.nome||'',x.cognome||'')===chiaveCliente(p.nome||'',p.cognome||''));
+  document.getElementById('ci-riepilogo').innerHTML=`
+    <strong style="font-size:16px">${p.cognome||''} ${p.nome||''}</strong><br>
+    📞 ${p.telefono||'—'} &nbsp;·&nbsp; 🛏️ ${nomeCameraById(p.cameraId)}<br>
+    Check-in: <strong>${formatDate(p.checkin)}</strong> → Check-out: <strong>${formatDate(p.checkout)}</strong> (${calcolaNotti(p.checkin,p.checkout)} notti)`;
+  const now=new Date();
+  document.getElementById('ci-ora').value=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const nOspiti = p.nOspiti||1;
+  document.getElementById('ci-ospiti').value = nOspiti;
+  document.getElementById('ci-note').value='';
+  // Inizializza array ospiti: usa quelli già salvati o crea dal prenotante
+  if(p.ospiti && p.ospiti.length){
+    ospitiBozzaCI = [...p.ospiti];
+    // Completa se mancano
+    while(ospitiBozzaCI.length < nOspiti) ospitiBozzaCI.push({});
+  } else {
+    ospitiBozzaCI = [{
+      cognome: p.cognome||'', nome: p.nome||'',
+      docTipo: p.docTipo||(c?.docTipo||''),
+      docNum:  p.docNum||(c?.docNum||''),
+      cittadinanza: c?.cittadinanza||'Italiana',
+    }];
+    for(let i=1;i<nOspiti;i++) ospitiBozzaCI.push({});
+  }
+  renderOspitiCI();
+  document.getElementById('modal-checkin').classList.add('open');
+}
+
+async function confermaCheckin(){
+  const p = allPrenotazioni.find(x=>x.id===checkinPrenId);
+  if(!p) return;
+  const ora = document.getElementById('ci-ora').value;
+  const nOspiti = parseInt(document.getElementById('ci-ospiti').value)||1;
+  const note = document.getElementById('ci-note').value.trim();
+  // Raccoglie dati di tutti gli ospiti dal form
+  const ospiti=[];
+  for(let i=0;i<nOspiti;i++){
+    const o = leggiOspiteForm(i,'ci');
+    if(o.cognome||o.nome) ospiti.push(o);
+  }
+  if(!ospiti[0]?.cognome || !ospiti[0]?.docNum){
+    showToast('Compila almeno cognome e documento del capofamiglia','error'); return;
+  }
+  try{
+    const update={
+      checkinConfermato:true, oraCheckin:ora, nOspiti, noteCheckin:note,
+      ospiti, // Array completo
+      // Retrocompatibilità con i campi flat del prenotante
+      docTipo: ospiti[0].docTipo||'', docNum: ospiti[0].docNum||'',
+      checkinTS: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    await db.collection('prenotazioni').doc(checkinPrenId).update(update);
+    // Aggiorna scheda cliente con i dati del capofamiglia
+    const k=chiaveCliente(p.nome||'',p.cognome||'');
+    const existing=allClienti.find(c=>chiaveCliente(c.nome||'',c.cognome||'')===k);
+    if(existing){
+      const upd={};
+      if(ospiti[0].docTipo) upd.docTipo=ospiti[0].docTipo;
+      if(ospiti[0].docNum)  upd.docNum=ospiti[0].docNum;
+      if(ospiti[0].dataNascita) upd.dataNascita=ospiti[0].dataNascita;
+      if(ospiti[0].sesso) upd.sesso=ospiti[0].sesso;
+      if(Object.keys(upd).length) await db.collection('clienti').doc(existing.id).update(upd);
+    }
+    closeModal('modal-checkin');
+    showToast(`✅ Check-in confermato: ${p.cognome||''} ${p.nome||''} – ${nOspiti} ospite${nOspiti>1?'i':''} – ore ${ora}`,'success');
+  }catch(e){showToast('Errore: '+e.message,'error')}
+}
+
+function openModalCheckout(id){
+  checkoutPrenId=id;
+  const p=allPrenotazioni.find(x=>x.id===id);
+  if(!p)return;
+  document.getElementById('co-riepilogo').innerHTML=`
+    <strong style="font-size:16px">${p.cognome||''} ${p.nome||''}</strong><br>
+    🛏️ ${nomeCameraById(p.cameraId)} &nbsp;·&nbsp; Check-in: ${formatDate(p.checkin)} (ore ${p.oraCheckin||'—'})<br>
+    Soggiorno: <strong>${calcolaNotti(p.checkin,p.checkout)} notti</strong> &nbsp;·&nbsp; Importo: <strong>€${parseFloat(p.prezzo||0).toFixed(2)}</strong>`;
+  const now=new Date();
+  document.getElementById('co-ora').value=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  document.getElementById('co-saldo').value=parseFloat(p.prezzo||0).toFixed(2);
+  document.getElementById('co-note').value='';
+  document.getElementById('modal-checkout').classList.add('open');
+}
+
+async function confermaCheckout(){
+  const p=allPrenotazioni.find(x=>x.id===checkoutPrenId);
+  if(!p)return;
+  const ora=document.getElementById('co-ora').value;
+  const saldo=parseFloat(document.getElementById('co-saldo').value)||0;
+  const note=document.getElementById('co-note').value.trim();
+  try{
+    await db.collection('prenotazioni').doc(checkoutPrenId).update({
+      checkoutConfermato:true,
+      oraCheckout:ora,
+      saldoPagato:saldo,
+      noteCheckout:note,
+      checkoutTS:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    closeModal('modal-checkout');
+    showToast(`🏁 Check-out confermato: ${p.cognome||''} ${p.nome||''} – ore ${ora}`,'success');
+  }catch(e){showToast('Errore: '+e.message,'error')}
+}
+
+function stampaRicevuta(){
+  const p=allPrenotazioni.find(x=>x.id===checkoutPrenId);
+  if(!p)return;
+  const ora=document.getElementById('co-ora').value;
+  const saldo=parseFloat(document.getElementById('co-saldo').value)||0;
+  const notti=calcolaNotti(p.checkin,p.checkout);
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Ricevuta soggiorno</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    body{font-family:'DM Sans',sans-serif;padding:40px;color:#0D2436;max-width:600px;margin:auto}
+    .header{text-align:center;border-bottom:2px solid #1A6FA8;padding-bottom:20px;margin-bottom:28px}
+    h1{font-family:'DM Serif Display',serif;color:#1A6FA8;font-size:26px;margin:0 0 4px}
+    .sub{color:#6A8DA8;font-size:13px}
+    .row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #E3F0F8;font-size:14px}
+    .label{color:#6A8DA8}.val{font-weight:600}
+    .total{display:flex;justify-content:space-between;padding:16px 0;font-size:18px;font-weight:700;color:#1A6FA8;border-top:2px solid #1A6FA8;margin-top:8px}
+    .footer{text-align:center;margin-top:32px;color:#6A8DA8;font-size:12px}
+    @media print{body{padding:20px}}
+  </style></head><body>
+  <div class="header">
+    <h1>🐓 🏨 Gestionale</h1>
+    <div class="sub">Ricevuta soggiorno</div>
+  </div>
+  <div class="row"><span class="label">Ospite</span><span class="val">${p.cognome||''} ${p.nome||''}</span></div>
+  <div class="row"><span class="label">Camera</span><span class="val">${nomeCameraById(p.cameraId)}</span></div>
+  <div class="row"><span class="label">Check-in</span><span class="val">${formatDate(p.checkin)} ore ${p.oraCheckin||'—'}</span></div>
+  <div class="row"><span class="label">Check-out</span><span class="val">${formatDate(p.checkout)} ore ${ora}</span></div>
+  <div class="row"><span class="label">Notti</span><span class="val">${notti}</span></div>
+  ${p.nOspiti?`<div class="row"><span class="label">N° ospiti</span><span class="val">${p.nOspiti}</span></div>`:''}
+  ${p.canale?`<div class="row"><span class="label">Canale</span><span class="val">${p.canale}</span></div>`:''}
+  <div class="total"><span>Totale</span><span>€${saldo.toFixed(2)}</span></div>
+  <div class="footer">Grazie per aver soggiornato presso la nostra struttura<br>
+  Ricevuta generata il ${formatDate(toDateStr(new Date()))}</div>
+  </body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(),400);
+}
+
+// ===== CAMERE =====
+function renderCamere(){
+  const grid=document.getElementById('camere-grid');
+  const oggi=toDateStr(new Date());
+  if(!allCamere.length){grid.innerHTML='<div class="empty-state"><div class="empty-icon">🛏️</div><p>Nessuna camera configurata</p></div>';return}
+  const canEdit=currentUserData?.ruolo==='admin'||currentUserData?.ruolo==='proprietario';
+  grid.innerHTML=allCamere.map(c=>{
+    // Trova prenotazione attiva oggi
+    const prenAttiva=allPrenotazioni.find(p=>p.cameraId===c.id&&p.checkin<=oggi&&p.checkout>oggi);
+    const arrivoOggi=allPrenotazioni.find(p=>p.cameraId===c.id&&p.checkin===oggi&&!p.checkinConfermato);
+    const partenzaOggi=allPrenotazioni.find(p=>p.cameraId===c.id&&p.checkout===oggi&&p.checkinConfermato&&!p.checkoutConfermato);
+    const isOcc=!!prenAttiva;
+    let statusHtml='';
+    if(prenAttiva&&prenAttiva.checkinConfermato){
+      statusHtml=`<span class="badge badge-stay">In soggiorno</span>
+        <div style="font-size:12px;margin-top:6px;color:var(--text)"><strong>${prenAttiva.cognome||''} ${prenAttiva.nome||''}</strong></div>
+        <div style="font-size:11px;color:var(--text-muted)">fino al ${formatDate(prenAttiva.checkout)}</div>`;
+    } else if(arrivoOggi){
+      statusHtml=`<span class="badge badge-in">Arrivo oggi</span>
+        <div style="font-size:12px;margin-top:6px;color:var(--text)"><strong>${arrivoOggi.cognome||''} ${arrivoOggi.nome||''}</strong></div>
+        <button class="btn btn-sm" style="margin-top:8px;background:#2AA1A0;color:#fff;width:100%;justify-content:center" onclick="openModalCheckin('${arrivoOggi.id}')">✅ Esegui check-in</button>`;
+    } else if(partenzaOggi){
+      statusHtml=`<span class="badge badge-out">Partenza oggi</span>
+        <div style="font-size:12px;margin-top:6px;color:var(--text)"><strong>${partenzaOggi.cognome||''} ${partenzaOggi.nome||''}</strong></div>
+        <button class="btn btn-sm" style="margin-top:8px;background:#1A6FA8;color:#fff;width:100%;justify-content:center" onclick="openModalCheckout('${partenzaOggi.id}')">🏁 Esegui check-out</button>`;
+    } else {
+      statusHtml=`<span class="badge ${isOcc?'badge-occ':'badge-free'}">${isOcc?'Occupata':'Libera'}</span>`;
+    }
+    return`<div class="camera-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="camera-numero">${c.numero}</div>
+          <div class="camera-nome">${c.nome||'—'}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${c.tipo||''}</div>
+        </div>
+      </div>
+      <div style="margin-top:10px">${statusHtml}</div>
+      ${c.note?`<div style="font-size:12px;color:var(--text-muted);margin-top:8px;border-top:1px solid var(--border);padding-top:8px">${c.note}</div>`:''}
+      ${canEdit?`<div class="camera-actions" style="margin-top:12px">
+        <button class="btn btn-sm btn-outline" onclick="editCamera('${c.id}')">✏️ Modifica</button>
+        <button class="btn btn-sm btn-danger" onclick="eliminaCamera('${c.id}')">🗑️</button>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+function openModalCamera(id){
+  editingCamId=id||null;
+  document.getElementById('modal-cam-title').textContent=id?'Modifica camera':'Nuova camera';
+  if(id){const c=allCamere.find(x=>x.id===id);document.getElementById('c-numero').value=c.numero||'';document.getElementById('c-nome').value=c.nome||'';document.getElementById('c-tipo').value=c.tipo||'Doppia';document.getElementById('c-note').value=c.note||''}
+  else{['c-numero','c-nome','c-note'].forEach(i=>document.getElementById(i).value='');document.getElementById('c-tipo').value='Doppia'}
+  document.getElementById('modal-camera').classList.add('open');
+}
+function editCamera(id){openModalCamera(id)}
+async function salvaCamera(){
+  const numero=document.getElementById('c-numero').value.trim();
+  if(!numero){showToast('Inserisci il numero camera','error');return}
+  const data={numero,nome:document.getElementById('c-nome').value.trim(),tipo:document.getElementById('c-tipo').value,note:document.getElementById('c-note').value.trim()};
+  try{
+    if(editingCamId)await db.collection('camere').doc(editingCamId).update(data);
+    else await db.collection('camere').add(data);
+    closeModal('modal-camera');showToast('Camera salvata ✓','success');
+  }catch(e){showToast('Errore: '+e.message,'error')}
+}
+async function eliminaCamera(id){
+  if(!confirm('Eliminare questa camera?'))return;
+  try{await db.collection('camere').doc(id).delete();showToast('Camera eliminata','success')}
+  catch(e){showToast('Errore: '+e.message,'error')}
+}
+
+// ===== CALENDARIO VERTICALE =====
+const MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+function calAnniDelta(d){calAnno+=d;aggiornaCalendario()}
+
+function aggiornaCalendario(){
+  const wrap=document.getElementById('cal-months-wrap');
+  if(!wrap)return;
+  if(!allCamere.length){wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--text-muted)">Nessuna camera configurata</div>';return}
+  const meseCorrente=new Date().getMonth();
+  // Ordine: mese corrente in cima, poi i successivi, poi i precedenti
+  const ordine=[];
+  for(let i=0;i<12;i++){
+    const m=(meseCorrente+i)%12;
+    const a=calAnno+Math.floor((meseCorrente+i)/12);
+    ordine.push({m,a});
+  }
+
+  wrap.innerHTML=ordine.map(({m,a})=>{
+    const isCorrente=m===meseCorrente&&a===new Date().getFullYear();
+    const giorniMese=new Date(a,m+1,0).getDate();
+    wrap.style.display='';
+    let grid=`<div class="cal-grid" style="grid-template-columns:130px repeat(${giorniMese},minmax(28px,1fr))">`;
+    grid+=`<div class="cal-head-cell">Camera</div>`;
+    for(let g=1;g<=giorniMese;g++){
+      const d=new Date(a,m,g);
+      const dow=['D','L','M','M','G','V','S'][d.getDay()];
+      const isWe=d.getDay()===0||d.getDay()===6;
+      const isOggi=toDateStr(d)===toDateStr(new Date());
+      grid+=`<div class="cal-head-cell" style="${isWe?'background:#d0e8f5;':''}${isOggi?'background:#1A6FA8;color:#fff;':''}">${g}<br><span style="font-size:9px">${dow}</span></div>`;
+    }
+    allCamere.forEach(cam=>{
+      grid+=`<div class="cal-room-cell">${cam.numero}${cam.nome?`<br><span style="font-size:10px;color:var(--text-muted)">${cam.nome}</span>`:''}</div>`;
+      for(let g=1;g<=giorniMese;g++){
+        const dateStr=toDateStrYMD(a,m,g);
+        const pren=allPrenotazioni.find(p=>p.cameraId===cam.id&&p.checkin<=dateStr&&p.checkout>dateStr);
+        const isFirst=pren&&pren.checkin===dateStr;
+        if(pren&&isFirst){
+          const dur=calcolaNotti(pren.checkin,pren.checkout);
+          const durInMese=Math.min(dur,giorniMese-g+1);
+          grid+=`<div class="cal-cell" style="overflow:visible;z-index:2">
+            <div class="cal-booking" title="${pren.cognome||''} ${pren.nome||''}" style="width:calc(${durInMese*100}% + ${(durInMese-1)*1}px)">
+              ${pren.cognome||''} ${pren.nome||''}
+            </div></div>`;
+        } else if(pren){
+          grid+=`<div class="cal-cell cal-occ"></div>`;
+        } else {
+          grid+=`<div class="cal-cell"></div>`;
+        }
+      }
+    });
+    grid+=`</div>`;
+    return`<div class="cal-month-block">
+      <div class="cal-month-label">
+        ${MESI[m]} ${a}
+        ${isCorrente?'<span class="badge badge-stay">Mese corrente</span>':''}
+      </div>
+      <div class="cal-grid-wrap">${grid}</div>
+    </div>`;
+  }).join('');
+}
+
+// ===== STAMPA =====
+function initPrintDate(){
+  document.getElementById('print-data').value=toDateStr(new Date());
+  const da=new Date(); da.setDate(da.getDate()-da.getDay()+1);
+  const a=new Date(da); a.setDate(a.getDate()+6);
+  document.getElementById('print-da').value=toDateStr(da);
+  document.getElementById('print-a').value=toDateStr(a);
+}
+function aggiornaPrintFiltri(){
+  const tipo=document.getElementById('print-tipo').value;
+  document.getElementById('print-data').style.display=tipo==='giorno'?'block':'none';
+  const cw=document.getElementById('print-custom-wrap');
+  cw.style.display=tipo==='custom'?'flex':'none';
+  renderStampa();
+}
+function stampaPeriodo(){
+  const tipo=document.getElementById('print-tipo')?.value||'giorno';
+  let da,a;
+  const oggi=toDateStr(new Date());
+  if(tipo==='giorno'){da=a=document.getElementById('print-data')?.value||oggi}
+  else if(tipo==='settimana'){const d=new Date();d.setDate(d.getDate()-d.getDay()+1);da=toDateStr(d);const d2=new Date(d);d2.setDate(d2.getDate()+6);a=toDateStr(d2)}
+  else if(tipo==='mese'){const d=new Date();da=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;const d2=new Date(d.getFullYear(),d.getMonth()+1,0);a=toDateStr(d2)}
+  else{da=document.getElementById('print-da')?.value||oggi;a=document.getElementById('print-a')?.value||oggi}
+  const filtrate=allPrenotazioni.filter(p=>p.checkin<=a&&p.checkout>da).sort((x,y)=>x.checkin.localeCompare(y.checkin));
+  const tot=filtrate.reduce((s,p)=>s+(parseFloat(p.prezzo)||0),0);
+  const periodoLabel=da===a?formatDate(da):`${formatDate(da)} → ${formatDate(a)}`;
+  const tipoLabel={'giorno':'Giorno','settimana':'Settimana','mese':'Mese','custom':'Periodo'}[tipo]||'';
+  let righe=filtrate.map(p=>{
+    const s=statoPrenotazione(p);
+    return`<tr>
+      <td><strong>${p.cognome||''} ${p.nome||''}</strong>${p.telefono?`<br><small>${p.telefono}</small>`:''}</td>
+      <td>${nomeCameraById(p.cameraId)}</td>
+      <td>${formatDate(p.checkin)}</td><td>${formatDate(p.checkout)}</td>
+      <td style="text-align:center">${calcolaNotti(p.checkin,p.checkout)}</td>
+      <td>€${parseFloat(p.prezzo||0).toFixed(2)}</td>
+      <td>${p.canale||'—'}</td>
+      <td>${s.label}</td>
+    </tr>`;
+  }).join('');
+  const w=window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Prenotazioni – ${periodoLabel}</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    body{font-family:'DM Sans',sans-serif;padding:30px;color:#0D2436;font-size:13px}
+    .header{display:flex;align-items:center;gap:16px;margin-bottom:20px;border-bottom:2px solid #1A6FA8;padding-bottom:14px}
+    .header h1{font-family:'DM Serif Display',serif;color:#1A6FA8;font-size:22px;margin:0}
+    .header p{color:#6A8DA8;margin:0;font-size:13px}
+    .summary{background:#EEF6FB;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px}
+    table{width:100%;border-collapse:collapse}
+    th{background:#1A6FA8;color:#fff;padding:9px 12px;text-align:left;font-size:12px;font-weight:600}
+    td{padding:8px 12px;border-bottom:1px solid #C8DFF0;vertical-align:top}
+    tr:nth-child(even) td{background:#f5fafd}
+    .footer{margin-top:20px;font-size:11px;color:#6A8DA8;text-align:right}
+    @media print{body{padding:15px}}
+  </style></head><body>
+  <div class="header">
+    <div>
+      <h1>🐓 🏨 Gestionale</h1>
+      <p>Riepilogo prenotazioni</p>
+    </div>
+  </div>
+  <div class="summary">
+    <strong>${tipoLabel}:</strong> ${periodoLabel} &nbsp;·&nbsp;
+    <strong>${filtrate.length}</strong> prenotazioni &nbsp;·&nbsp;
+    Totale incasso: <strong style="color:#1A6FA8">€${tot.toFixed(2)}</strong>
+  </div>
+  ${filtrate.length?`<table>
+    <thead><tr><th>Ospite</th><th>Camera</th><th>Check-in</th><th>Check-out</th><th>Notti</th><th>Prezzo</th><th>Canale</th><th>Stato</th></tr></thead>
+    <tbody>${righe}</tbody>
+  </table>`:'<p style="text-align:center;padding:30px;color:#6A8DA8">Nessuna prenotazione nel periodo selezionato</p>'}
+  <div class="footer">Stampato il ${formatDate(toDateStr(new Date()))} – Gestionale 🏨 Gestionale</div>
+  </body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(),400);
+}
+
+function renderStampa(){
+  const tipo=document.getElementById('print-tipo')?.value||'giorno';
+  let da,a;
+  const oggi=toDateStr(new Date());
+  if(tipo==='giorno'){
+    da=a=document.getElementById('print-data')?.value||oggi;
+  } else if(tipo==='settimana'){
+    const d=new Date(); d.setDate(d.getDate()-d.getDay()+1);
+    da=toDateStr(d); const d2=new Date(d); d2.setDate(d2.getDate()+6); a=toDateStr(d2);
+  } else if(tipo==='mese'){
+    const d=new Date(); da=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
+    const d2=new Date(d.getFullYear(),d.getMonth()+1,0); a=toDateStr(d2);
+  } else {
+    da=document.getElementById('print-da')?.value||oggi;
+    a=document.getElementById('print-a')?.value||oggi;
+  }
+  if(!da||!a)return;
+  const filtrate=allPrenotazioni.filter(p=>p.checkin<=a&&p.checkout>da)
+    .sort((x,y)=>x.checkin.localeCompare(y.checkin));
+  const tot=filtrate.reduce((s,p)=>s+(parseFloat(p.prezzo)||0),0);
+  const cont=document.getElementById('stampa-content');
+  if(!cont)return;
+  let html=`<div style="margin-bottom:12px;font-size:14px;color:var(--text-muted)">
+    Periodo: <strong>${formatDate(da)}${da!==a?' → '+formatDate(a):''}</strong> · 
+    ${filtrate.length} prenotazioni · Totale: <strong style="color:var(--accent)">€${tot.toFixed(2)}</strong>
+  </div>`;
+  if(!filtrate.length){html+='<div class="empty-state"><div class="empty-icon">📄</div><p>Nessuna prenotazione nel periodo</p></div>';cont.innerHTML=html;return}
+  html+=`<div class="table-wrap"><table>
+    <thead><tr><th>Ospite</th><th>Camera</th><th>Check-in</th><th>Check-out</th><th>Notti</th><th>Prezzo</th><th>Canale</th><th>Stato</th></tr></thead>
+    <tbody>${filtrate.map(p=>{
+      const s=statoPrenotazione(p);
+      return`<tr>
+        <td><strong>${p.cognome||''} ${p.nome||''}</strong>${p.telefono?`<br><small>${p.telefono}</small>`:''}</td>
+        <td>${nomeCameraById(p.cameraId)}</td>
+        <td>${formatDate(p.checkin)}</td><td>${formatDate(p.checkout)}</td>
+        <td>${calcolaNotti(p.checkin,p.checkout)}</td>
+        <td>€${parseFloat(p.prezzo||0).toFixed(2)}</td>
+        <td>${p.canale||'—'}</td>
+        <td><span class="badge ${s.cls}">${s.label}</span></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+  cont.innerHTML=html;
+}
+
+// ===== UTENTI =====
+function renderUtenti(){
+  const tb=document.getElementById('tb-utenti');
+  if(!allUtenti.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted)">Nessun utente</td></tr>';return}
+  tb.innerHTML=allUtenti.map(u=>`<tr>
+    <td>${u.email||'—'}</td><td>${u.nome||'—'}</td><td>${u.ruolo||'—'}</td>
+    <td><span class="badge ${u.stato==='approvato'?'badge-in':'badge-out'}">${u.stato||'pending'}</span></td>
+    <td>
+      ${u.stato!=='approvato'?`<button class="btn btn-sm btn-primary" onclick="approvaUtente('${u.id}')">Approva</button>`:''}
+      ${u.id!==currentUser.uid?`<button class="btn btn-sm btn-danger" onclick="rimuoviUtente('${u.id}')">Rimuovi</button>`:''}
+    </td></tr>`).join('');
+}
+async function approvaUtente(uid){await db.collection('utenti').doc(uid).update({stato:'approvato'});showToast('Utente approvato ✓','success')}
+async function rimuoviUtente(uid){if(!confirm('Rimuovere?'))return;await db.collection('utenti').doc(uid).delete();showToast('Rimosso','success')}
+
+function aggiornaAlertQuestura(){
+  const badge = document.getElementById('questura-badge');
+  if(!badge) return;
+  const oggi = toDateStr(new Date());
+  const storicoQ = JSON.parse(localStorage.getItem('questura_storico')||'[]');
+  const idsComunicati = new Set(storicoQ.flatMap(s=>s.ids||[]));
+
+  let urgenti=0, inAttesa=0;
+  allPrenotazioni.forEach(p=>{
+    if(!p.checkinConfermato) return;
+    if(idsComunicati.has(p.id)) return;
+    // Calcola ore trascorse dall'arrivo
+    const arrivo = p.oraCheckin
+      ? new Date(`${p.checkin}T${p.oraCheckin}`)
+      : new Date(`${p.checkin}T14:00`);
+    const oreTrascorse = (new Date() - arrivo) / (1000*60*60);
+    if(oreTrascorse >= 24) urgenti++;
+    else inAttesa++;
+  });
+
+  const tot = urgenti + inAttesa;
+  if(tot === 0){
+    badge.style.display='none';
+    return;
+  }
+  badge.style.display='inline-block';
+  if(urgenti > 0){
+    // ROSSO — scaduto 24h
+    badge.textContent = urgenti > 1 ? `${urgenti} ⚠️` : '⚠️';
+    badge.style.background='#C0392B';
+    badge.style.color='#fff';
+    badge.title = `${urgenti} comunicazione/i scaduta/e (oltre 24h)`;
+  } else {
+    // ARANCIONE — in attesa entro 24h
+    badge.textContent = inAttesa > 1 ? `${inAttesa}` : '!';
+    badge.style.background='#E67E22';
+    badge.style.color='#fff';
+    badge.title = `${inAttesa} comunicazione/i da inviare entro 24h`;
+  }
+}
+let storicoQuestura = [];
+
+function initQuestura() {
+  // Carica impostazioni da localStorage
+  const cfg = JSON.parse(localStorage.getItem('questura_cfg') || '{}');
+  document.getElementById('q-codice').value = cfg.codice || '';
+  document.getElementById('q-username').value = cfg.username || '';
+  document.getElementById('q-camere-disp').value = cfg.camereDisp || '';
+  // Data filtro default = oggi
+  document.getElementById('q-data-filtro').value = toDateStr(new Date());
+  // Carica storico
+  storicoQuestura = JSON.parse(localStorage.getItem('questura_storico') || '[]');
+  renderQuestura();
+  renderStoricoQuestura();
+}
+
+function salvaImpostazioniQuestura() {
+  const cfg = {
+    codice: document.getElementById('q-codice').value.trim(),
+    username: document.getElementById('q-username').value.trim(),
+    camereDisp: document.getElementById('q-camere-disp').value,
+  };
+  localStorage.setItem('questura_cfg', JSON.stringify(cfg));
+}
+
+function renderQuestura() {
+  const tb = document.getElementById('tb-questura');
+  if (!tb) return;
+  const dataFiltro = document.getElementById('q-data-filtro')?.value || toDateStr(new Date());
+  const oggi = toDateStr(new Date());
+
+  // Mostra prenotazioni con check-in confermato nel giorno selezionato o recenti non ancora comunicate
+  const daComun = allPrenotazioni.filter(p =>
+    p.checkinConfermato && p.checkin === dataFiltro
+  );
+
+  if (!daComun.length) {
+    tb.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">✅</div>
+      <p>Nessun arrivo in questa data</p></div></td></tr>`;
+    document.getElementById('btn-genera-txt').disabled = true;
+    return;
+  }
+
+  tb.innerHTML = daComun.map(p => {
+    const giaCom = (storicoQuestura || []).some(s => s.ids && s.ids.includes(p.id));
+    const scaduta = scadenzaSuperata(p);
+    return `<tr style="${scaduta && !giaCom ? 'background:#FFF5F5' : ''}">
+      <td><input type="checkbox" class="q-check" value="${p.id}" onchange="aggiornaBottoneGenera()"></td>
+      <td><strong>${p.cognome||''} ${p.nome||''}</strong>
+        ${p.docTipo ? `<br><small style="color:var(--text-muted)">${p.docTipo}: ${p.docNum||'—'}</small>` : '<br><small style="color:var(--danger)">⚠️ documento mancante</small>'}
+      </td>
+      <td>${nomeCameraById(p.cameraId)}</td>
+      <td>${formatDate(p.checkin)}${p.oraCheckin ? ' ' + p.oraCheckin : ''}</td>
+      <td>${formatDate(p.checkout)}</td>
+      <td style="font-size:12px">${p.docTipo || '—'}<br>${p.docNum || '—'}</td>
+      <td>${giaCom
+        ? '<span class="badge badge-free">✓ Comunicato</span>'
+        : scaduta
+          ? '<span class="badge" style="background:#FDECEA;color:#C0392B">⚠️ Scaduto</span>'
+          : '<span class="badge badge-in">Da inviare</span>'
+      }</td>
+      <td class="no-print">
+        <button class="btn btn-sm btn-outline" onclick="apriModaleQuestura('${p.id}')">✏️ Dati</button>
+      </td>
+    </tr>`;
+  }).join('');
+  aggiornaBottoneGenera();
+}
+
+function scadenzaSuperata(p) {
+  if (!p.checkin || !p.oraCheckin) return false;
+  const arrivo = new Date(`${p.checkin}T${p.oraCheckin}`);
+  const limite = new Date(arrivo.getTime() + 24 * 60 * 60 * 1000);
+  return new Date() > limite;
+}
+
+function aggiornaBottoneGenera() {
+  const sel = document.querySelectorAll('.q-check:checked');
+  document.getElementById('btn-genera-txt').disabled = sel.length === 0;
+  document.getElementById('q-check-all').indeterminate =
+    sel.length > 0 && sel.length < document.querySelectorAll('.q-check').length;
+  document.getElementById('q-check-all').checked =
+    sel.length > 0 && sel.length === document.querySelectorAll('.q-check').length;
+}
+
+function toggleTuttiQuestura(cb) {
+  document.querySelectorAll('.q-check').forEach(c => c.checked = cb.checked);
+  aggiornaBottoneGenera();
+}
+
+function selezionaTuttiQuestura() {
+  document.querySelectorAll('.q-check').forEach(c => c.checked = true);
+  document.getElementById('q-check-all').checked = true;
+  aggiornaBottoneGenera();
+}
+
+function apriModaleQuestura(id) {
+  // Apre il modal check-in per integrare i dati mancanti
+  openModalCheckin(id);
+}
+
+// ── Generazione file TXT tracciato record Alloggiati Web ──────────────────────
+function generaFileTXT() {
+  const selIds = [...document.querySelectorAll('.q-check:checked')].map(c => c.value);
+  if (!selIds.length) { showToast('Seleziona almeno un ospite', 'error'); return; }
+
+  const cfg = JSON.parse(localStorage.getItem('questura_cfg') || '{}');
+  const codStruttura = cfg.codice || '               '; // 15 char
+  const nCamereDisp = parseInt(cfg.camereDisp) || allCamere.length;
+
+  let righe = [];
+  // Prima riga: codice struttura (15 char) + 181 spazi
+  righe.push(padR(codStruttura, 15) + ' '.repeat(181));
+
+  const prenotazSel = selIds.map(id => allPrenotazioni.find(p => p.id === id)).filter(Boolean);
+
+  prenotazSel.forEach(p => {
+    // Usa array ospiti se disponibile, altrimenti solo il prenotante
+    const listaOspiti = (p.ospiti && p.ospiti.length)
+      ? p.ospiti
+      : [{cognome:p.cognome, nome:p.nome, docTipo:p.docTipo, docNum:p.docNum, cittadinanza:'Italiana'}];
+
+    listaOspiti.forEach((osp, idx) => {
+      // Tipo: 18=capofamiglia/singolo, 20=familiare
+      const tipoAlloggiato = idx===0 ? '18' : '20';
+
+      const dataArrivo    = p.checkin  ? p.checkin.replace(/-/g,'')  : '        ';
+      const dataPartenza  = p.checkout ? p.checkout.replace(/-/g,'') : '        ';
+      const durata        = padL(String(calcolaNotti(p.checkin,p.checkout)),4);
+      const nOspitiTot    = idx===0 ? padL(String(listaOspiti.length),2) : '  ';
+      const cognome       = padR((osp.cognome||'').toUpperCase(),50);
+      const nome          = padR((osp.nome||'').toUpperCase(),30);
+      const sesso         = padR(osp.sesso||'',1);
+      const dataNascita   = osp.dataNascita ? osp.dataNascita.replace(/-/g,'') : '        ';
+      const comuneNascita = padR('',9);
+      const provNascita   = padR('',2);
+      const statoNascita  = padR('100000100',9);
+      const cittadinanza  = padR('100000100',9);
+      const tipoDoc       = codiceDocumento(osp.docTipo);
+      const numDoc        = padR((osp.docNum||'').toUpperCase(),20);
+      const luogoCilascio = padR('',9);
+      const camereOcc     = idx===0 ? padL('1',4) : '    ';
+      const camereDispStr = idx===0 ? padL(String(nCamereDisp),4) : '    ';
+      const lettiDisp     = idx===0 ? padL(String(nCamereDisp*2),4) : '    ';
+
+      let riga = tipoAlloggiato + dataArrivo + dataPartenza + durata
+        + nOspitiTot + cognome + nome + sesso + dataNascita
+        + comuneNascita + provNascita + statoNascita + cittadinanza
+        + tipoDoc + numDoc + luogoCilascio
+        + camereOcc + camereDispStr + lettiDisp
+        + ' '.repeat(14);
+
+      riga = riga.substring(0,196).padEnd(196,' ');
+      righe.push(riga);
+    });
+  });
+
+  // Unisce con CR+LF (l'ultima riga NON ha CR+LF)
+  const contenuto = righe.join('\r\n');
+  const dataFile = toDateStr(new Date()).replace(/-/g, '');
+  const nomeFile = `alloggiati_${dataFile}.txt`;
+
+  // Download
+  const blob = new Blob([contenuto], { type: 'text/plain;charset=ascii' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nomeFile; a.click();
+  URL.revokeObjectURL(url);
+
+  // Salva nello storico
+  const record = {
+    data: new Date().toISOString(),
+    nomeFile,
+    nOspiti: selIds.length,
+    ids: selIds,
+    note: '',
+  };
+  storicoQuestura.unshift(record);
+  localStorage.setItem('questura_storico', JSON.stringify(storicoQuestura.slice(0, 50)));
+  renderStoricoQuestura();
+  renderQuestura();
+  aggiornaAlertQuestura();
+  showToast(`✅ File "${nomeFile}" generato — caricalo su Alloggiati Web`, 'success');
+}
+
+function codiceDocumento(tipo) {
+  // Codici ufficiali Alloggiati Web
+  const mappa = {
+    'Carta d\'identità': 'IDENT',
+    'Passaporto': 'PASSP',
+    'Patente': 'PATEN',
+    'Permesso di soggiorno': 'PRMSO',
+  };
+  return padR(mappa[tipo] || 'IDENT', 5);
+}
+
+function padR(s, n) { return String(s || '').substring(0, n).padEnd(n, ' '); }
+function padL(s, n) { return String(s || '').substring(0, n).padStart(n, '0'); }
+
+function renderStoricoQuestura() {
+  const tb = document.getElementById('tb-storico-questura');
+  if (!tb) return;
+  if (!storicoQuestura.length) {
+    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted)">Nessuna comunicazione ancora generata</td></tr>';
+    return;
+  }
+  tb.innerHTML = storicoQuestura.map((r, i) => {
+    const dt = new Date(r.data);
+    const dataFmt = `${dt.getDate().toString().padStart(2,'0')}/${(dt.getMonth()+1).toString().padStart(2,'0')}/${dt.getFullYear()} ${dt.getHours().toString().padStart(2,'0')}:${dt.getMinutes().toString().padStart(2,'0')}`;
+    return `<tr>
+      <td>${dataFmt}</td>
+      <td>${r.nOspiti} ospite${r.nOspiti > 1 ? 'i' : ''}</td>
+      <td style="font-family:monospace;font-size:12px">${r.nomeFile}</td>
+      <td>
+        <input class="form-control" style="font-size:12px;padding:4px 8px;height:auto"
+          value="${r.note || ''}" placeholder="Note..."
+          onchange="aggiornaNotaQuestura(${i}, this.value)">
+      </td>
+      <td class="no-print">
+        <button class="btn btn-sm btn-danger" onclick="eliminaStoricoQuestura(${i})">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function aggiornaNotaQuestura(i, nota) {
+  storicoQuestura[i].note = nota;
+  localStorage.setItem('questura_storico', JSON.stringify(storicoQuestura));
+}
+
+function eliminaStoricoQuestura(i) {
+  if (!confirm('Eliminare questo record dallo storico?')) return;
+  storicoQuestura.splice(i, 1);
+  localStorage.setItem('questura_storico', JSON.stringify(storicoQuestura));
+  renderStoricoQuestura();
+}
+
+// ===== CONTABILITÀ =====
+const CAT_DEFAULT = [
+  {nome:'Soggiorno / affitto', tipo:'entrata'},
+  {nome:'Colazione / ristorazione', tipo:'entrata'},
+  {nome:'Servizi extra', tipo:'entrata'},
+  {nome:'Tassa di soggiorno', tipo:'entrata'},
+  {nome:'Caparra ricevuta', tipo:'entrata'},
+  {nome:'Rimborso / altro', tipo:'entrata'},
+  {nome:'Pulizie', tipo:'uscita'},
+  {nome:'Biancheria / lavanderia', tipo:'uscita'},
+  {nome:'Manutenzione / riparazioni', tipo:'uscita'},
+  {nome:'Utenze (luce/gas/acqua)', tipo:'uscita'},
+  {nome:'Connettività / internet', tipo:'uscita'},
+  {nome:'Acquisti / forniture', tipo:'uscita'},
+  {nome:'Commissioni OTA (Booking/Airbnb)', tipo:'uscita'},
+  {nome:'Tasse / imposte', tipo:'uscita'},
+  {nome:'Personale / collaboratori', tipo:'uscita'},
+  {nome:'Assicurazioni', tipo:'uscita'},
+  {nome:'Marketing / pubblicità', tipo:'uscita'},
+  {nome:'Altro', tipo:'entrambi'},
+];
+
+async function inserisciCategorieDefault(){
+  const batch=db.batch();
+  CAT_DEFAULT.forEach(c=>{
+    const ref=db.collection('categorie_contabilita').doc();
+    batch.set(ref,{...c,creata:firebase.firestore.FieldValue.serverTimestamp()});
+  });
+  await batch.commit();
+}
+
+function popolaFiltroCategorie(){
+  const sel=document.getElementById('cont-filtro-cat');
+  if(!sel)return;
+  const val=sel.value;
+  sel.innerHTML='<option value="">Tutte le categorie</option>';
+  allCategorie.forEach(c=>sel.innerHTML+=`<option value="${c.nome}">${c.nome}</option>`);
+  sel.value=val;
+}
+
+function aggiornaCategorieModal(){
+  const tipo=document.getElementById('mov-tipo')?.value||'entrata';
+  const sel=document.getElementById('mov-categoria');
+  if(!sel)return;
+  sel.innerHTML='';
+  allCategorie
+    .filter(c=>c.tipo===tipo||c.tipo==='entrambi')
+    .forEach(c=>sel.innerHTML+=`<option value="${c.nome}">${c.nome}</option>`);
+}
+
+function getMovimentiFiltrati(){
+  const tipo=document.getElementById('cont-filtro-tipo')?.value||'';
+  const cat=document.getElementById('cont-filtro-cat')?.value||'';
+  const periodo=document.getElementById('cont-filtro-periodo')?.value||'mese';
+  const q=(document.getElementById('cont-search')?.value||'').toLowerCase();
+  const oggi=new Date();
+  let da='', a='';
+  if(periodo==='mese'){
+    da=`${oggi.getFullYear()}-${String(oggi.getMonth()+1).padStart(2,'0')}-01`;
+    a=toDateStr(new Date(oggi.getFullYear(),oggi.getMonth()+1,0));
+  } else if(periodo==='anno'){
+    da=`${oggi.getFullYear()}-01-01`;
+    a=`${oggi.getFullYear()}-12-31`;
+  } else if(periodo==='custom'){
+    da=document.getElementById('cont-da')?.value||'';
+    a=document.getElementById('cont-a')?.value||'';
+  }
+  return allMovimenti.filter(m=>{
+    if(tipo&&m.tipo!==tipo)return false;
+    if(cat&&m.categoria!==cat)return false;
+    if(da&&m.data<da)return false;
+    if(a&&m.data>a)return false;
+    if(q&&!(m.descrizione||'').toLowerCase().includes(q))return false;
+    return true;
+  });
+}
+
+function aggiornaFiltroPeriodo(){
+  const periodo=document.getElementById('cont-filtro-periodo')?.value;
+  const custom=document.getElementById('cont-filtro-custom');
+  if(custom) custom.style.display=periodo==='custom'?'flex':'none';
+  renderContabilita();
+}
+
+function renderContabilita(){
+  const lista=getMovimentiFiltrati();
+  const tb=document.getElementById('tb-contabilita');
+  if(!tb)return;
+
+  // aggiorna KPI globali (tutti i movimenti)
+  const tuttiMov=allMovimenti;
+  const totEnt=tuttiMov.filter(m=>m.tipo==='entrata').reduce((s,m)=>s+(m.importo||0),0);
+  const totUsc=tuttiMov.filter(m=>m.tipo==='uscita').reduce((s,m)=>s+(m.importo||0),0);
+  const saldo=totEnt-totUsc;
+  document.getElementById('cont-kpi-entrate').textContent='€'+totEnt.toFixed(2);
+  document.getElementById('cont-kpi-uscite').textContent='€'+totUsc.toFixed(2);
+  document.getElementById('cont-kpi-saldo').textContent='€'+Math.abs(saldo).toFixed(2)+(saldo<0?' (negativo)':'');
+  document.getElementById('cont-kpi-saldo').style.color=saldo>=0?'#2a7a3b':'var(--danger)';
+  document.getElementById('cont-kpi-saldo-card').style.borderLeftColor=saldo>=0?'#2a7a3b':'var(--danger)';
+  document.getElementById('cont-kpi-entrate-sub').textContent=tuttiMov.filter(m=>m.tipo==='entrata').length+' movimenti';
+  document.getElementById('cont-kpi-uscite-sub').textContent=tuttiMov.filter(m=>m.tipo==='uscita').length+' movimenti';
+  document.getElementById('cont-kpi-tot').textContent=tuttiMov.length;
+
+  // tabella filtrata
+  if(!lista.length){
+    tb.innerHTML='<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">💰</div><p>Nessun movimento nel periodo</p></div></td></tr>';
+    document.getElementById('cont-totale-bar').innerHTML='';
+    return;
+  }
+  const canEdit=currentUserData?.ruolo==='admin'||currentUserData?.ruolo==='proprietario';
+  tb.innerHTML=lista.map(m=>{
+    const isEnt=m.tipo==='entrata';
+    const colore=isEnt?'#2a7a3b':'var(--danger)';
+    const bg=isEnt?'#EEF7F0':'#FEF0F0';
+    return`<tr>
+      <td>${formatDate(m.data)}</td>
+      <td><span class="badge" style="background:${bg};color:${colore}">${isEnt?'⬆ Entrata':'⬇ Uscita'}</span></td>
+      <td><span style="font-size:12px;color:var(--text-muted)">${m.categoria||'—'}</span></td>
+      <td>
+        <strong>${m.descrizione||'—'}</strong>
+        ${m.rif?`<br><small style="color:var(--text-muted)">Rif: ${m.rif}</small>`:''}
+        ${m.note?`<br><small style="color:var(--text-muted);font-style:italic">${m.note}</small>`:''}
+      </td>
+      <td style="font-size:13px;color:var(--text-muted)">${m.metodo||'—'}</td>
+      <td style="text-align:right;font-weight:600;color:${colore}">
+        ${isEnt?'+':'−'}€${(m.importo||0).toFixed(2)}
+      </td>
+      ${canEdit?`<td class="no-print" style="display:flex;gap:6px;padding:10px 16px">
+        <button class="btn btn-sm btn-outline" onclick="editMovimento('${m.id}')">✏️</button>
+        <button class="btn btn-sm btn-danger" onclick="eliminaMovimento('${m.id}')">🗑️</button>
+      </td>`:'<td></td>'}
+    </tr>`;
+  }).join('');
+
+  // barra riepilogo periodo filtrato
+  const entFilt=lista.filter(m=>m.tipo==='entrata').reduce((s,m)=>s+(m.importo||0),0);
+  const uscFilt=lista.filter(m=>m.tipo==='uscita').reduce((s,m)=>s+(m.importo||0),0);
+  const saldoFilt=entFilt-uscFilt;
+  document.getElementById('cont-totale-bar').innerHTML=`
+    <span>Periodo filtrato: <strong>${lista.length}</strong> movimenti</span>
+    <span style="color:#2a7a3b">Entrate: <strong>€${entFilt.toFixed(2)}</strong></span>
+    <span style="color:var(--danger)">Uscite: <strong>€${uscFilt.toFixed(2)}</strong></span>
+    <span style="color:${saldoFilt>=0?'#2a7a3b':'var(--danger)'}">Saldo: <strong>${saldoFilt>=0?'+':'−'}€${Math.abs(saldoFilt).toFixed(2)}</strong></span>
+  `;
+}
+
+function aggiornaDashboardContabilita(){
+  const oggi=new Date();
+  const da=`${oggi.getFullYear()}-${String(oggi.getMonth()+1).padStart(2,'0')}-01`;
+  const a=toDateStr(new Date(oggi.getFullYear(),oggi.getMonth()+1,0));
+  const ent=allMovimenti.filter(m=>m.tipo==='entrata'&&m.data>=da&&m.data<=a).reduce((s,m)=>s+(m.importo||0),0);
+  const usc=allMovimenti.filter(m=>m.tipo==='uscita'&&m.data>=da&&m.data<=a).reduce((s,m)=>s+(m.importo||0),0);
+  const saldo=ent-usc;
+  const el=document.getElementById('stat-mese');
+  if(el) el.textContent='€'+ent.toFixed(2);
+  const dashSaldo=document.getElementById('dash-saldo-cont');
+  if(dashSaldo){
+    dashSaldo.textContent=(saldo>=0?'+':'−')+'€'+Math.abs(saldo).toFixed(2);
+    dashSaldo.style.color=saldo>=0?'#2a7a3b':'var(--danger)';
+  }
+  const dashCard=document.getElementById('dash-saldo-card');
+  if(dashCard) dashCard.style.borderLeftColor=saldo>=0?'#2a7a3b':'var(--danger)';
+  const dashSub=document.getElementById('dash-saldo-sub');
+  if(dashSub) dashSub.textContent=`€${ent.toFixed(2)} ent. − €${usc.toFixed(2)} usc.`;
+}
+
+function openModalMovimento(id){
+  editingMovId=id||null;
+  document.getElementById('modal-mov-title').textContent=id?'Modifica movimento':'Nuovo movimento';
+  document.getElementById('mov-data').value=toDateStr(new Date());
+  document.getElementById('mov-tipo').value='entrata';
+  document.getElementById('mov-importo').value='';
+  document.getElementById('mov-descrizione').value='';
+  document.getElementById('mov-metodo').value='';
+  document.getElementById('mov-rif').value='';
+  document.getElementById('mov-note').value='';
+  aggiornaCategorieModal();
+  if(id){
+    const m=allMovimenti.find(x=>x.id===id);
+    if(m){
+      document.getElementById('mov-data').value=m.data||'';
+      document.getElementById('mov-tipo').value=m.tipo||'entrata';
+      aggiornaCategorieModal();
+      document.getElementById('mov-categoria').value=m.categoria||'';
+      document.getElementById('mov-importo').value=m.importo||'';
+      document.getElementById('mov-descrizione').value=m.descrizione||'';
+      document.getElementById('mov-metodo').value=m.metodo||'';
+      document.getElementById('mov-rif').value=m.rif||'';
+      document.getElementById('mov-note').value=m.note||'';
+    }
+  }
+  document.getElementById('modal-movimento').classList.add('open');
+}
+function editMovimento(id){openModalMovimento(id)}
+
+async function salvaMovimento(){
+  const data=document.getElementById('mov-data').value;
+  const tipo=document.getElementById('mov-tipo').value;
+  const importo=parseFloat(document.getElementById('mov-importo').value);
+  const descrizione=document.getElementById('mov-descrizione').value.trim();
+  const categoria=document.getElementById('mov-categoria').value;
+  if(!data||!tipo||!importo||importo<=0||!descrizione){
+    showToast('Compila data, tipo, importo e descrizione','error');return;
+  }
+  const doc={
+    data, tipo, importo, descrizione, categoria,
+    metodo:document.getElementById('mov-metodo').value,
+    rif:document.getElementById('mov-rif').value.trim(),
+    note:document.getElementById('mov-note').value.trim(),
+    aggiornato:firebase.firestore.FieldValue.serverTimestamp(),
+  };
+  try{
+    if(editingMovId){
+      await db.collection('contabilita').doc(editingMovId).update(doc);
+    } else {
+      doc.creato=firebase.firestore.FieldValue.serverTimestamp();
+      doc.creatoDA=currentUser.uid;
+      await db.collection('contabilita').add(doc);
+    }
+    closeModal('modal-movimento');
+    showToast('Movimento salvato ✓','success');
+  }catch(e){showToast('Errore: '+e.message,'error')}
+}
+
+async function eliminaMovimento(id){
+  if(!confirm('Eliminare questo movimento?'))return;
+  try{
+    await db.collection('contabilita').doc(id).delete();
+    showToast('Movimento eliminato','success');
+  }catch(e){showToast('Errore: '+e.message,'error')}
+}
+
+// Gestione categorie
+function openModalCategorie(){
+  document.getElementById('nuova-cat-nome').value='';
+  document.getElementById('nuova-cat-tipo').value='uscita';
+  document.getElementById('modal-categorie').classList.add('open');
+}
+
+async function aggiungiCategoria(){
+  const nome=document.getElementById('nuova-cat-nome').value.trim();
+  const tipo=document.getElementById('nuova-cat-tipo').value;
+  if(!nome){showToast('Inserisci il nome della categoria','error');return}
+  if(allCategorie.find(c=>c.nome.toLowerCase()===nome.toLowerCase())){
+    showToast('Categoria già esistente','error');return;
+  }
+  try{
+    await db.collection('categorie_contabilita').add({nome,tipo,creata:firebase.firestore.FieldValue.serverTimestamp()});
+    document.getElementById('nuova-cat-nome').value='';
+    showToast('Categoria aggiunta ✓','success');
+  }catch(e){showToast('Errore: '+e.message,'error')}
+}
+
+async function eliminaCategoria(id){
+  if(!confirm('Eliminare questa categoria?'))return;
+  try{
+    await db.collection('categorie_contabilita').doc(id).delete();
+    showToast('Categoria eliminata','success');
+  }catch(e){showToast('Errore: '+e.message,'error')}
+}
+
+function renderTabellaCategorie(){
+  const tb=document.getElementById('tb-categorie');
+  const tb2=document.getElementById('tb-categorie-imp');
+  const labelTipo={entrata:'🟢 Entrata',uscita:'🔴 Uscita',entrambi:'🔵 Entrambe'};
+  const vuotoHtml='<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text-muted)">Nessuna categoria</td></tr>';
+  const righe=!allCategorie.length?vuotoHtml:allCategorie.map(c=>`<tr>
+    <td><strong>${c.nome}</strong></td>
+    <td>${labelTipo[c.tipo]||c.tipo}</td>
+    <td class="no-print">
+      <button class="btn btn-sm btn-danger" onclick="eliminaCategoria('${c.id}')">🗑️</button>
+    </td>
+  </tr>`).join('');
+  if(tb)tb.innerHTML=righe;
+  if(tb2)tb2.innerHTML=righe;
+}
+
+function esportaCSV(){
+  const lista=getMovimentiFiltrati();
+  if(!lista.length){showToast('Nessun dato da esportare','error');return}
+  const righe=[
+    ['Data','Tipo','Categoria','Descrizione','Importo','Metodo','Riferimento','Note'],
+    ...lista.map(m=>[
+      m.data||'',
+      m.tipo||'',
+      m.categoria||'',
+      (m.descrizione||'').replace(/,/g,' '),
+      (m.importo||0).toFixed(2),
+      m.metodo||'',
+      m.rif||'',
+      (m.note||'').replace(/,/g,' '),
+    ])
+  ];
+  const csv=righe.map(r=>r.join(',')).join('\r\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`contabilita_${toDateStr(new Date())}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV esportato ✓','success');
+}
+
+// ===== UTILITY =====
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+function toDateStr(d){return d.toISOString().split('T')[0]}
+function toDateStrYMD(y,m,d){return`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`}
+function calcolaNotti(ci,co){return Math.round((new Date(co)-new Date(ci))/(1000*60*60*24))}
+function formatDate(s){if(!s)return'—';const[y,m,d]=s.split('-');return`${d}/${m}/${y}`}
+function nomeCameraById(id){const c=allCamere.find(x=>x.id===id);return c?`${c.numero}${c.nome?' - '+c.nome:''}`:'—'}
+
+let toastTimer;
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='show'+(type?' '+type:'');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.className='',3500);
+}
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open')});
+});
+// Init filtri stampa al caricamento
+document.addEventListener('DOMContentLoaded',()=>{aggiornaPrintFiltri()});
+</script>
+</body>
+</html>
